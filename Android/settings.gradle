@@ -1,0 +1,3 @@
+include ':wear_app'
+include ':app'
+rootProject.name = "AndroidApp"
