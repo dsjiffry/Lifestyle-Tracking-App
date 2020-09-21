@@ -3,7 +3,8 @@
     Then by monitoring the user’s expression and using obtained information, difficulty level of the app will be changed.
     
 # Main Research Question
-    Fitness is a major concern in modern society due to technological advancements making life easy. So, people use fitness apps to try and keep track of their          health and to make
+
+    Fitness is a major concern in modern society due to technological advancements making life easy. So, people use fitness apps to try and keep track of their health and to make
     their lives healthier. But a lot of fitness apps are static and do only recommend actions, they do not change with the user. Also, there is no single app that gives a fitness
     plan, daily routines, nutrition plan and monitors the user’s expression. Our studies show that most people prepare meals at home, less than twice per day.But most nutrition
     apps only suggest home-cooked meals and do not show healthy dine-out options, this makes it less practical for most people. Studies also show that even though
@@ -46,7 +47,8 @@
     
     
   ## Harshamali W.S.
-    * research problem is how to give an application solution that should have best fitness features such as personal account, setting goals, actual activity tracking, and social elements without any change to their day to day activities.
+
+    research problem is how to give an application solution that should have best fitness features such as personal account, setting goals, actual activity tracking, and social elements without any change to their day to day activities.
     With the busy life style, the user must change their life style if they use currently available fitness application. Most of the users do not like to change their life style and day to day activities while some will do it who concern
     their health mostly. So I am deciding to monitor the physical features of the user like Age, weight, height, steps doing in the whole day and the heart rate of the user in very first level of my section. Initially refer to those physical
     features of the user and generate the fitness workout for the user. So there is no any effect for the day to day life pattern of the user. Our application will generate the Balanced diet and the daily routine to the user. So after the application
