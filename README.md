@@ -104,7 +104,7 @@
 
 # Technologies to be use
     -Android
-    -Tenserflower
+    -Tensorflow
     -Colab
     -Python
     -Open CV
