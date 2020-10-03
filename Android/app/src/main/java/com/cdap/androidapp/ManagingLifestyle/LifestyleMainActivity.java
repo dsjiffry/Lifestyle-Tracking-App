@@ -31,4 +31,13 @@ public class LifestyleMainActivity extends AppCompatActivity {
 //        String[] accelerometer = prefs.getStringSet("accelerometer", new HashSet<String>()).toArray(new String[0]);
 //        textView.setText(accelerometer[0] +"\n"+ accelerometer[1] +"\n"+ accelerometer[2] );
     }
+
+    private void loadModel()
+    {
+        (new Thread(new Runnable(){
+            public void run(){
+
+            }
+        })).start();
+    }
 }
