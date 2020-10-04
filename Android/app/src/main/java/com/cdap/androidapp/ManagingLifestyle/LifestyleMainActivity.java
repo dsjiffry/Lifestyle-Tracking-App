@@ -71,7 +71,7 @@ public class LifestyleMainActivity extends AppCompatActivity {
 
     private void predictActivity(List<Float> data)
     {
-//        results = classifier.predict(toFloatArray(data));
+        results = classifier.predict(toFloatArray(data));
         System.out.println("predicted Activity: "+ Arrays.toString(results));
     }
 
