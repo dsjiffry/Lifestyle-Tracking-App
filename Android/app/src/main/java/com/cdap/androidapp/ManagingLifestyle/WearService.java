@@ -42,9 +42,9 @@ public class WearService extends WearableListenerService implements Serializable
         HashSet<String> values = new HashSet<>();
 
         if (message.contains("#&")) {
-            values.add(message.split("#&")[0]); // x- axis
-            values.add(message.split("#&")[1]); // y- axis
-            values.add(message.split("#&")[2]); // z- axis
+            values.add(message.split("#&")[0]); // x - axis
+            values.add(message.split("#&")[1]); // y - axis
+            values.add(message.split("#&")[2]); // z - axis
 
             SharedPreferences sharedpreferences = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = sharedpreferences.edit();
