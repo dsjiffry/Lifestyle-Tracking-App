@@ -13,7 +13,7 @@
         <activity android:name=".DailyRoutine.RoutineMainActivity"></activity>
         <activity android:name=".FoodReccomendation.FoodMainActivity" />
         <activity android:name=".GameDifficulty.GameMainActivity" />
-        <activity android:name=".ManagingLifestyle.LifestyleMainActivity" />
+        <activity android:name=".ManagingLifestyle.LifestyleMainActivity"  android:screenOrientation="portrait"/>
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

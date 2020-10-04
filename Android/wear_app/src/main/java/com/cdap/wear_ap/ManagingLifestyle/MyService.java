@@ -34,7 +34,7 @@ public class MyService extends Service implements Runnable, SensorEventListener,
     private Sensor Gyroscope;
     private GoogleApiClient googleClient;
     private StringBuilder text = new StringBuilder();
-    private float[] accelerometerReadings = {0, 0, 0};
+    public static float[] accelerometerReadings = {0, 0, 0};
     private float[] GyroscopeReadings = {0, 0, 0};
 
     private String message;
@@ -81,8 +81,8 @@ public class MyService extends Service implements Runnable, SensorEventListener,
     private void onNewAccelerometerValue(SensorEvent sensorEvent) {
         text.append(sensorEvent.values[0] + "#&" + sensorEvent.values[1] + "#&" + sensorEvent.values[2]); //can separate values vy splitting #&
 
-        Toast toast = Toast.makeText(getApplicationContext(), text.toString(), Toast.LENGTH_SHORT);
-        toast.show();
+//        Toast toast = Toast.makeText(getApplicationContext(), text.toString(), Toast.LENGTH_SHORT);
+//        toast.show();
 
         sendMessage("/accelerometer", text.toString().getBytes());
 
