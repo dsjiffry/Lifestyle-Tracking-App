@@ -8,9 +8,9 @@ public class ActivityClassifier {
 
     private TensorFlowInferenceInterface inferenceInterface;
     private static final String MODEL_FILE = "lifestyle_model/lifestyle_model.h5";
-    private static final String INPUT_NODE = "bidirectional_1";
-    private static final String[] OUTPUT_NODES = {"output/Softmax"};
-    private static final String OUTPUT_NODE = "output/Softmax";
+    private static final String INPUT_NODE = "x:0";
+    private static final String[] OUTPUT_NODES = {"Identity:0"};
+    private static final String OUTPUT_NODE = "Identity:0";
     private static final long[] INPUT_SIZE = {1, 200, 3};
     private static final int OUTPUT_SIZE = 5;
 

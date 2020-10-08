@@ -22,7 +22,7 @@ public class LifestyleMainActivity extends AppCompatActivity {
     public TextView textView;
 
     private float[] results;
-    private ActivityClassifier classifier;
+//    private ActivityClassifier classifier;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,7 +30,7 @@ public class LifestyleMainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_lifestyle_main);
         context = getApplicationContext();
         textView = findViewById(R.id.mainText);
-        classifier = new ActivityClassifier(getApplicationContext());
+//        classifier = new ActivityClassifier(getApplicationContext());
 
 
         Intent intent = new Intent(context, WearService.class);
@@ -39,7 +39,7 @@ public class LifestyleMainActivity extends AppCompatActivity {
         List<Float> data = new ArrayList<>();
         for(int i=0; i<600; i++)
             data.add(0f);
-        predictActivity(data);
+//        predictActivity(data);
 
         (new Thread(new Runnable() {
             public void run() {
@@ -71,7 +71,7 @@ public class LifestyleMainActivity extends AppCompatActivity {
 
     private void predictActivity(List<Float> data)
     {
-        results = classifier.predict(toFloatArray(data));
+//        results = classifier.predict(toFloatArray(data));
         System.out.println("predicted Activity: "+ Arrays.toString(results));
     }
 
