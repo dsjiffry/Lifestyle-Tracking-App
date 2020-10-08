@@ -2,6 +2,7 @@ package com.cdap.wear_ap.ManagingLifestyle;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.wearable.activity.WearableActivity;
 import android.widget.TextView;
@@ -18,6 +19,7 @@ public class LifestyleMainActivity extends WearableActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lifestyle_main);
+        getWindow().getDecorView().setBackgroundColor(Color.BLACK);
 
         context = getApplicationContext();
         mTextView = findViewById(R.id.textView);

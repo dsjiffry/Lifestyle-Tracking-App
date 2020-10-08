@@ -54,7 +54,7 @@ public class LifestyleMainActivity extends AppCompatActivity {
                                 data.add(Float.parseFloat(values.get(0)));
                                 data.add(Float.parseFloat(values.get(1)));
                                 data.add(Float.parseFloat(values.get(2)));
-                                predictActivity(data);
+//                                predictActivity(data);
                             }
                         }
                     });
