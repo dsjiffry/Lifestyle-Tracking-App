@@ -6,6 +6,11 @@ from rest_framework.decorators import api_view
 from rest_framework import status
 import tensorflow as tf
 from tensorflow import keras
+import json
+import numpy as np
+
+
+lifestyle_model = tf.keras.models.load_model('lifestyle_model.h5')
 
 
 
@@ -15,11 +20,15 @@ def homePageView(request):
 @csrf_exempt
 @api_view(['POST'])
 def register(request):
-    if request.method == "POST":
-        
-        new_model = tf.keras.models.load_model('lifestyle_model.h5')
-        new_model.summary()
+    # lifestyle_model.summary()
+    jsonBody = request.data
+    readings = jsonBody["data"]
+    # print(readings)
+
+    arr = np.array(readings).astype(np.float32)
+    prediction = lifestyle_model.predict(arr)
+    # print(prediction)
 
 
-        post = request.POST #if no files
-    return Response(status=200)
+
+    return Response(data=prediction, status=200)

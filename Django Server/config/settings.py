@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
 
-    'lifestyle_Management'
+    'fitness_mobile_game'
 ]
 
 MIDDLEWARE = [
