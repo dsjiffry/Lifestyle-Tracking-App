@@ -10,7 +10,7 @@ import json
 import numpy as np
 
 
-lifestyle_model = tf.keras.models.load_model('lifestyle_model.h5')
+lifestyle_model = tf.keras.models.load_model('lifestyle_model.h5') #Loading up my model on start of server.
 
 
 
@@ -27,8 +27,14 @@ def register(request):
 
     arr = np.array(readings).astype(np.float32)
     prediction = lifestyle_model.predict(arr)
+    prediction = prediction.argmax(axis=-1)
+
+    json = {
+        "prediction": prediction
+    }
+    
     # print(prediction)
 
 
 
-    return Response(data=prediction, status=200)
+    return Response(data=json, status=200)
