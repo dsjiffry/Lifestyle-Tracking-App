@@ -12,15 +12,20 @@ import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.WearableListenerService;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 public class WearService extends WearableListenerService implements Serializable {
 
     public static String message = "";
+    public static ArrayList<String> values = new ArrayList<>();
+
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         return super.onStartCommand(intent, flags, startId);
+
     }
 
     @Override
@@ -38,23 +43,24 @@ public class WearService extends WearableListenerService implements Serializable
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
         super.onMessageReceived(messageEvent);
+        if(values.size() == 0) {
+            values.add("0");
+            values.add("0");
+            values.add("0");
+        }
         message = new String(messageEvent.getData());
-        HashSet<String> values = new HashSet<>();
+//        HashSet<String> values = new HashSet<>();
 
         if (message.contains("#&")) {
-            values.add(message.split("#&")[0]); // x - axis
-            values.add(message.split("#&")[1]); // y - axis
-            values.add(message.split("#&")[2]); // z - axis
-
-            SharedPreferences sharedpreferences = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
-            SharedPreferences.Editor editor = sharedpreferences.edit();
-            editor.putStringSet("accelerometer", values);
-            editor.commit();
-
+            values.set(0, message.split("#&")[0]); // x - axis
+            values.set(1,message.split("#&")[1]); // y - axis
+            values.set(2,message.split("#&")[2]); // z - axis
         }
 
-        Toast.makeText(getApplicationContext(), "Wear OS Message " + message.replaceAll("#&"," "), Toast.LENGTH_LONG).show();
+//        Toast.makeText(getApplicationContext(), "Wear OS Message " + message.replaceAll("#&"," "), Toast.LENGTH_LONG).show();
     }
+
+
 
     @Override
     public void onPeerConnected(Node peer) {
