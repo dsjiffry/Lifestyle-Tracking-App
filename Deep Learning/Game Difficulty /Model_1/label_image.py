@@ -8,8 +8,8 @@ import time
 
 import numpy as np
 import tensorflow as tf
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+import tensorflow.compat.v1 as tf #Tensorflow 2 error fixed
+tf.disable_v2_behavior() #Tensorflow 2 error fixed
 
 def load_graph(model_file):
   graph = tf.Graph()
