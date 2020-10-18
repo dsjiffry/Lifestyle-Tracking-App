@@ -2,27 +2,33 @@ package com.cdap.androidapp.ManagingLifestyle;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.TextView;
 
-import com.cdap.androidapp.MainActivity;
+import com.cdap.androidapp.ManagingLifestyle.DataBase.DataBaseManager;
 import com.cdap.androidapp.R;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 public class LifestyleMainActivity extends AppCompatActivity {
 
     private Context context;
+    public final static String SERVER_URL = "https://en2ziscd63aas.x.pipedream.net";
     public TextView textView;
-
-    private float[] results;
-//    private ActivityClassifier classifier;
+    URL url = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,31 +36,26 @@ public class LifestyleMainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_lifestyle_main);
         context = getApplicationContext();
         textView = findViewById(R.id.mainText);
-//        classifier = new ActivityClassifier(getApplicationContext());
 
 
         Intent intent = new Intent(context, WearService.class);
         context.startService(intent);
 
-        List<Float> data = new ArrayList<>();
-        for(int i=0; i<600; i++)
-            data.add(0f);
-//        predictActivity(data);
+//        predictActivity(WearService.values);
+
 
         (new Thread(new Runnable() {
             public void run() {
-                while(true) {
-                    final ArrayList<String> values = WearService.values;
+//                if(WearService.values.size() == 200) {
+                    predictActivity(WearService.values);
+                    WearService.values.clear();
+//                }
+                while (true) {
+                    final ArrayList<Double> values = WearService.values;
                     runOnUiThread(new Runnable() {
                         public void run() {
-                            if(!values.isEmpty()) {
+                            if (!values.isEmpty()) {
                                 textView.setText(values.get(0) + "\n" + values.get(1) + "\n" + values.get(2));
-
-                                List<Float> data = new ArrayList<>();
-                                data.add(Float.parseFloat(values.get(0)));
-                                data.add(Float.parseFloat(values.get(1)));
-                                data.add(Float.parseFloat(values.get(2)));
-//                                predictActivity(data);
                             }
                         }
                     });
@@ -69,20 +70,54 @@ public class LifestyleMainActivity extends AppCompatActivity {
 
     }
 
-    private void predictActivity(List<Float> data)
-    {
-//        results = classifier.predict(toFloatArray(data));
-        System.out.println("predicted Activity: "+ Arrays.toString(results));
+    /**
+     * Will make a POST request to backend server and obtain the predicted activity
+     *
+     * @param values
+     */
+    private String predictActivity(ArrayList<Double> values) {
+        String prediction = null;
+
+        try {
+            //Making POST request
+            if (url == null) {
+                url = new URL(SERVER_URL);
+            }
+            URLConnection conn = url.openConnection();
+
+            JSONObject jsonObject = new JSONObject();
+            JSONArray jsonArray = new JSONArray();
+            jsonArray.put(values.get(0));
+            jsonObject.put("data",jsonArray);
+
+
+            conn.setDoOutput(true);
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(conn.getOutputStream());
+            outputStreamWriter.write( jsonObject.toString() );
+            outputStreamWriter.flush();
+
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            StringBuilder stringBuilder = new StringBuilder();
+            while((prediction = bufferedReader.readLine()) != null)
+            {
+                stringBuilder.append((prediction +"\n"));
+            }
+            prediction = stringBuilder.toString();
+            System.out.println(prediction);
+
+            DataBaseManager dataBaseManager = new DataBaseManager(context);
+            dataBaseManager.addPrediction();
+
+
+        } catch (MalformedURLException e) { //url = new URL(SERVER_URL);
+            e.printStackTrace();
+        } catch (IOException e) { // URLConnection conn = url.openConnection();
+            e.printStackTrace();
+        } catch (JSONException e) { // jsonObject.put(...);
+            e.printStackTrace();
+        }
+        return prediction;
     }
 
-    private float[] toFloatArray(List<Float> data)
-    {
-        int i = 0;
-        float[] array = new float[data.size()];
-        for(Float f : data)
-        {
-            array[i++] = (f != null ? f : Float.NaN);
-        }
-        return array;
-    }
+
 }

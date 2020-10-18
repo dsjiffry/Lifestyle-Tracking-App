@@ -9,7 +9,16 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final String PREFERENCES_NAME = "preferences_file";
+    ////////////////////////////////////// DO NOT MODIFY THESE /////////////////////////////////////////////////
+    public static final String PREFERENCES_NAME = "fitness_mobile_game_preferences";
+    public static final String DB_NAME = "fitness_mobile_game_DB";
+    public static final int DB_VERSION = 1;
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
