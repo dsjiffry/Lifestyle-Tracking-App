@@ -8,7 +8,10 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.WorkerThread;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -23,10 +26,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.WorkerThread;
-
 public class MyService extends Service implements Runnable, SensorEventListener, MessageApi.MessageListener, GoogleApiClient.ConnectionCallbacks {
 
     private SensorManager sensorManager;
@@ -36,6 +35,7 @@ public class MyService extends Service implements Runnable, SensorEventListener,
     private StringBuilder text = new StringBuilder();
     public static float[] accelerometerReadings = {0, 0, 0};
     private float[] GyroscopeReadings = {0, 0, 0};
+    private static boolean sendMessageNow = false;
 
     private String message;
     private byte[] payload;
@@ -50,7 +50,7 @@ public class MyService extends Service implements Runnable, SensorEventListener,
         Accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 //        Gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
 
-        sensorManager.registerListener(this, Accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, Accelerometer, 50000);
 //        sensorManager.registerListener(this, Gyroscope, SensorManager.SENSOR_DELAY_NORMAL);
 
         googleClient = new GoogleApiClient.Builder(this)
@@ -65,6 +65,9 @@ public class MyService extends Service implements Runnable, SensorEventListener,
                 .build();
 
         googleClient.connect();
+
+        Thread thread = new Thread(this);
+        thread.start();
 
 
         return START_STICKY;
@@ -84,6 +87,7 @@ public class MyService extends Service implements Runnable, SensorEventListener,
 //        Toast toast = Toast.makeText(getApplicationContext(), text.toString(), Toast.LENGTH_SHORT);
 //        toast.show();
 
+        sendMessageNow = true;
         sendMessage("/accelerometer", text.toString().getBytes());
 
         text.setLength(0); //emptying buffer
@@ -107,8 +111,7 @@ public class MyService extends Service implements Runnable, SensorEventListener,
         this.message = message;
         this.payload = payload;
 
-        Thread thread = new Thread(this);
-        thread.start();
+
     }
 
 
@@ -142,21 +145,28 @@ public class MyService extends Service implements Runnable, SensorEventListener,
     @Override
     public void run() {
         List<Node> nodes;
-        try {
-            nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
-            for (Node node : nodes) {
-                System.out.println("WEAR sending " + message + " to " + node);
-                Wearable.MessageApi.sendMessage(googleClient, node.getId(), message, payload).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
-                    @Override
-                    public void onResult(MessageApi.SendMessageResult sendMessageResult) {
-                        System.out.println("WEAR Result " + sendMessageResult.getStatus());
+        while(true) {
+
+            if(sendMessageNow) {
+                try {
+                    nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
+                    for (Node node : nodes) {
+                        System.out.println("WEAR sending " + message + " to " + node);
+                        Wearable.MessageApi.sendMessage(googleClient, node.getId(), message, payload).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+                            @Override
+                            public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+                                System.out.println("WEAR Result " + sendMessageResult.getStatus());
+                            }
+                        });
                     }
-                });
+                    sendMessageNow = false;
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+
         }
     }
 

@@ -2,7 +2,6 @@ package com.cdap.androidapp.ManagingLifestyle.DataBase;
 
 import android.content.Context;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public class DataBaseManager
@@ -14,9 +13,8 @@ public class DataBaseManager
         db = DataBase.getInstance(context);
     }
 
-    public void addPrediction()
+    public void addPrediction(PredictionEntity predictionEntity)
     {
-        PredictionEntity predictionEntity = new PredictionEntity(LocalDate.now().toString(),20,30, "jogging");
         db.predictionDao().insertPrediction(predictionEntity);
     }
 

@@ -11,8 +11,14 @@ public class PredictionEntity
     @PrimaryKey(autoGenerate = true)
     public int id;
 
-    @ColumnInfo(name = "date")
-    public String date;
+    @ColumnInfo(name = "day")
+    public int day;
+
+    @ColumnInfo(name = "month")
+    public int month;
+
+    @ColumnInfo(name = "year")
+    public int year;
 
     @ColumnInfo(name = "hour")  //using 24h clock
     public int hour;
@@ -24,17 +30,22 @@ public class PredictionEntity
     public String activity;
 
 
-    public PredictionEntity(int id, String date, int hour, int minute, String activity) {
+    public PredictionEntity(int id, int day, int month, int year, int hour, int minute, String activity) {
         this.id = id;
-        this.date = date;
+        this.day = day;
+        this.month = month;
+        this.year = year;
         this.hour = hour;
         this.minute = minute;
         this.activity = activity;
     }
 
     @Ignore
-    public PredictionEntity(String date, int hour, int minute, String activity) {
-        this.date = date;
+    public PredictionEntity(int day, int month, int year, int hour, int minute, String activity)
+    {
+        this.day = day;
+        this.month = month;
+        this.year = year;
         this.hour = hour;
         this.minute = minute;
         this.activity = activity;

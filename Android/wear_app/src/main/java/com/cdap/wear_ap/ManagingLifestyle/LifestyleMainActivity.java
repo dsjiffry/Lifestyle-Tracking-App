@@ -51,6 +51,33 @@ public class LifestyleMainActivity extends WearableActivity {
 
 
 //        // Enables Always-on
-//        setAmbientEnabled();
+        setAmbientEnabled();
     }
+
+    @Override
+    public void onEnterAmbient(Bundle ambientDetails) {
+        super.onEnterAmbient(ambientDetails);
+
+        mTextView.setTextColor(Color.GRAY);
+        mTextView.getPaint().setAntiAlias(false);
+    }
+
+    @Override
+    public void onExitAmbient() {
+        super.onExitAmbient();
+
+        mTextView.setTextColor(Color.WHITE);
+        mTextView.getPaint().setAntiAlias(true);
+    }
+
+
+
+
+
+
+
+
+
+
+
 }
