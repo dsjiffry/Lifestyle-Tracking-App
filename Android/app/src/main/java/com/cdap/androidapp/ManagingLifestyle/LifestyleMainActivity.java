@@ -34,8 +34,9 @@ import java.util.concurrent.ExecutionException;
 public class LifestyleMainActivity extends AppCompatActivity implements Runnable {
 
     private Context context;
-    public final static String SERVER_URL = "http://192.168.8.140:8000/life";
+    public final static String SERVER_URL = "https://en2ziscd63aas.x.pipedream.net";
     public TextView textView;
+    public TextView textView2;
     private URL url = null;
 
     @Override
@@ -44,6 +45,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         setContentView(R.layout.activity_lifestyle_main);
         context = getApplicationContext();
         textView = findViewById(R.id.mainText);
+        textView2 = findViewById(R.id.mainText2);
 
 
         Thread thread = new Thread(this);
@@ -100,7 +102,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                 stringBuilder.append(line + "\n");
             }
             prediction = stringBuilder.toString();
-            final String finalPrediction = prediction.replaceAll("\"","");
+            final String finalPrediction = prediction.replaceAll("\"", "");
             runOnUiThread(new Runnable() {
                 public void run() {
                     textView.setText(finalPrediction);
@@ -147,24 +149,36 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         while (true) {
             if (!WearService.isRunning && !nodes.isEmpty()) {
                 context.startService(intent);
+//                context.startForegroundService(intent);
             }
+
+            if (!WearService.values.isEmpty()) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        textView2.setText(
+                                WearService.values.get(WearService.values.size() - 1).xAxis + "\n" +
+                                        WearService.values.get(WearService.values.size() - 1).yAxis + "\n" +
+                                        WearService.values.get(WearService.values.size() - 1).zAxis
+                        );
+                    }
+                });
+            }
+
+
             if (WearService.values.size() >= 200) {
                 predictActivity(WearService.values);
                 WearService.values.clear();
             }
 
             try {
-                Thread.sleep(1000);
+                Thread.sleep(50);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
 
     }
-
-
-
-
 
 
 }

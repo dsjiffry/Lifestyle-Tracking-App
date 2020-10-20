@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.wearable.activity.WearableActivity;
+import android.view.WindowManager;
 import android.widget.TextView;
 
 import com.cdap.wear_ap.R;
@@ -26,6 +27,8 @@ public class LifestyleMainActivity extends WearableActivity {
 
         Intent intent = new Intent(this, MyService.class);
         context.startService(intent);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
 
 
         (new Thread(new Runnable() {
@@ -57,17 +60,11 @@ public class LifestyleMainActivity extends WearableActivity {
     @Override
     public void onEnterAmbient(Bundle ambientDetails) {
         super.onEnterAmbient(ambientDetails);
-
-        mTextView.setTextColor(Color.GRAY);
-        mTextView.getPaint().setAntiAlias(false);
     }
 
     @Override
     public void onExitAmbient() {
         super.onExitAmbient();
-
-        mTextView.setTextColor(Color.WHITE);
-        mTextView.getPaint().setAntiAlias(true);
     }
 
 

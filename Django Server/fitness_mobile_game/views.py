@@ -10,7 +10,7 @@ import json
 import os
 import numpy as np
 
-os.environ["CUDA_VISIBLE_DEVICES"]="-1" # Make predictions without using GPU
+# os.environ["CUDA_VISIBLE_DEVICES"]="-1" # Make predictions without using GPU
 lifestyle_model = tf.keras.models.load_model('lifestyle_model.h5') #Loading up lifestyle model on start of server.
 
 
