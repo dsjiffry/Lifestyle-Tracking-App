@@ -53,7 +53,18 @@ def lifestyle_management_predictions(request):
 
 
 
-    return Response(data=json, status=200)
+    return Response(data=activity, status=200)
+
+
+
+
+
+
+
+
+
+
+
 
 
 

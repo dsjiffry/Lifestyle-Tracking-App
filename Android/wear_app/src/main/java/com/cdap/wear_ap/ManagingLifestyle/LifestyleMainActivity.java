@@ -51,7 +51,7 @@ public class LifestyleMainActivity extends WearableActivity {
 
 
 //        // Enables Always-on
-        setAmbientEnabled();
+//        setAmbientEnabled();
     }
 
     @Override

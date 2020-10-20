@@ -10,6 +10,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.DataBaseManager;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.PredictionEntity;
 import com.cdap.androidapp.R;
+import com.google.android.gms.tasks.Tasks;
+import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.Wearable;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -25,6 +28,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class LifestyleMainActivity extends AppCompatActivity implements Runnable {
 
@@ -51,7 +56,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
      *
      * @param values
      */
-    private String predictActivity(ArrayList<Reading> values){
+    private String predictActivity(ArrayList<Reading> values) {
         String prediction = null;
 
         try {
@@ -75,7 +80,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
 
             //Making POST request
             URL url = new URL(SERVER_URL);
-            HttpURLConnection httpURLConnection = (HttpURLConnection)url.openConnection();
+            HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
             httpURLConnection.setDoOutput(true);
             httpURLConnection.setRequestMethod("POST");
             httpURLConnection.setRequestProperty("Content-Type", "application/json");
@@ -95,10 +100,10 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                 stringBuilder.append(line + "\n");
             }
             prediction = stringBuilder.toString();
-            final String finalPrediction = prediction;
+            final String finalPrediction = prediction.replaceAll("\"","");
             runOnUiThread(new Runnable() {
                 public void run() {
-                        textView.setText(finalPrediction);
+                    textView.setText(finalPrediction);
                 }
             });
 
@@ -127,18 +132,20 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
     }
 
 
-
     @Override
     public void run() {
         Intent intent = new Intent(context, WearService.class);
-        runOnUiThread(new Runnable() {
-            public void run() {
-                textView.setText("predicting...");
-            }
-        });
+        List<Node> nodes = new ArrayList<>();
+        try {
+            nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         while (true) {
-            if (!WearService.isRunning) {
+            if (!WearService.isRunning && !nodes.isEmpty()) {
                 context.startService(intent);
             }
             if (WearService.values.size() >= 200) {
@@ -154,4 +161,10 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         }
 
     }
+
+
+
+
+
+
 }

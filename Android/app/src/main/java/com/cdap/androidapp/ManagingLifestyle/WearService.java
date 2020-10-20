@@ -62,6 +62,7 @@ public class WearService extends WearableListenerService implements Serializable
                     Double.valueOf(message.split("#&")[2]) // z - axis
             );
             values.add(reading);
+            System.out.println(reading);
         }
 
 //        Toast.makeText(getApplicationContext(), "Wear OS Message " + message.replaceAll("#&"," "), Toast.LENGTH_LONG).show();
@@ -77,6 +78,7 @@ public class WearService extends WearableListenerService implements Serializable
     @Override
     public void onPeerDisconnected(Node peer) {
         super.onPeerDisconnected(peer);
+        stopSelf();
         System.out.println("Wear OS Disconnected");
     }
 
