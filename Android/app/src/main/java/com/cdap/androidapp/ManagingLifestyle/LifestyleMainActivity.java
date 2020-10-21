@@ -82,10 +82,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                 context.startService(intent);
             }
 
-            if(!WearService.prediction.isEmpty())
-            {
-               setUITextFromThreads(textView, WearService.prediction);
-            }
+            setUITextFromThreads(textView, WearService.prediction);
 
             try {
                 Thread.sleep(500);

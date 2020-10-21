@@ -24,7 +24,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -34,10 +33,10 @@ import java.util.ArrayList;
 /**
  * Listens to messages from the watch
  */
-public class WearService extends WearableListenerService implements Serializable, Runnable {
+public class WearService extends WearableListenerService implements Runnable {
 
     private ArrayList<Reading> values = new ArrayList<>();    // Stores 200 accelerometer readings
-    public static String prediction = "";
+    public static volatile String prediction = "predicting...";
     private Context context;
     public final static String SERVER_URL = "http://192.168.8.140:8000/life";
     private URL url = null;
@@ -46,7 +45,7 @@ public class WearService extends WearableListenerService implements Serializable
     public static Boolean isRunning = false;    //Used to check if service is already running
 
     private Thread thread;
-    private Object lock = new Object();
+    private final Object lock = new Object();
 
     @Override
     public void onCreate() {
@@ -95,7 +94,7 @@ public class WearService extends WearableListenerService implements Serializable
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
         super.onMessageReceived(messageEvent);
-        System.out.println("Received Message from Watch: "+messageEvent.getSourceNodeId());
+        System.out.println("Received Message from Watch: " + messageEvent.getSourceNodeId());
         String message = new String(messageEvent.getData());
         String[] lines = message.split("(\\$%\\$%)");
 
@@ -170,7 +169,6 @@ public class WearService extends WearableListenerService implements Serializable
                     stringBuilder.append(line + "\n");
                 }
                 prediction = stringBuilder.toString().replaceAll("\"", "").trim();
-
 
                 DataBaseManager dataBaseManager = new DataBaseManager(context);
                 LocalDateTime localDateTime = LocalDateTime.now();
