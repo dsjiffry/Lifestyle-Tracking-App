@@ -22,6 +22,7 @@ import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.Wearable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -30,17 +31,25 @@ public class MyService extends Service implements Runnable, SensorEventListener,
 
     private SensorManager sensorManager;
     private Sensor Accelerometer;
-    private Sensor Gyroscope;
+    //    private Sensor Gyroscope;
     private GoogleApiClient googleClient;
     private StringBuilder text = new StringBuilder();
     public static float[] accelerometerReadings = {0, 0, 0};
-    private float[] GyroscopeReadings = {0, 0, 0};
-    private static boolean sendMessageNow = false;
+    //    private float[] GyroscopeReadings = {0, 0, 0};
+    private ArrayList<SensorEvent> readings = new ArrayList<>();
+    public static boolean sendMessage = false;
+    private Object lock = new Object();
 
     private String message;
     private byte[] payload;
+    public Thread thread;
 
     public MyService() {
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
     }
 
     @Override
@@ -66,7 +75,7 @@ public class MyService extends Service implements Runnable, SensorEventListener,
 
         googleClient.connect();
 
-        Thread thread = new Thread(this);
+        thread = new Thread(this);
         thread.start();
 
 
@@ -78,40 +87,42 @@ public class MyService extends Service implements Runnable, SensorEventListener,
 
     /**
      * Will store accelerometer reading and send to phone
+     *
      * @param sensorEvent
      */
     @WorkerThread
     private void onNewAccelerometerValue(SensorEvent sensorEvent) {
-        text.append(sensorEvent.values[0] + "#&" + sensorEvent.values[1] + "#&" + sensorEvent.values[2]); //can separate values vy splitting #&
+        if (readings.size() < 200) {
+            readings.add(sensorEvent);
+        } else {
+            for (SensorEvent reading : readings) //can separate values by splitting #& and lines by splitting $%$%
+            {
+                text.append(reading.values[0] + "#&" + reading.values[1] + "#&" + reading.values[2] + "$%$%");
+            }
 
-//        Toast toast = Toast.makeText(getApplicationContext(), text.toString(), Toast.LENGTH_SHORT);
-//        toast.show();
+            setMessage("/accelerometer", text.toString().getBytes());
+//            sendMessage = true;
+            synchronized (lock) {
+                lock.notify();
+            }
 
-        sendMessageNow = true;
-        sendMessage("/accelerometer", text.toString().getBytes());
 
-        text.setLength(0); //emptying buffer
-    }
+            text.setLength(0); //emptying buffer
+            readings.clear();
+        }
 
-    /**
-     * Will store Gyroscope reading and send to phone
-     * @param sensorEvent
-     */
-    private void onNewGyroscopeValue(SensorEvent sensorEvent) {
-
+//        text.append(sensorEvent.values[0] + "#&" + sensorEvent.values[1] + "#&" + sensorEvent.values[2]); //can separate values by splitting #&
     }
 
     /**
      * Create and send message to node on Seperate thread
+     *
      * @param message path
      * @param payload payload to send
      */
-    private void sendMessage(String message, byte[] payload) {
-
+    private void setMessage(String message, byte[] payload) {
         this.message = message;
         this.payload = payload;
-
-
     }
 
 
@@ -131,46 +142,43 @@ public class MyService extends Service implements Runnable, SensorEventListener,
                 accelerometerReadings[i] = sensorEvent.values[i];
             }
         }
-//        else if (sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-//            if (Arrays.equals(GyroscopeReadings, sensorEvent.values)) // No change in readings
-//            {
-//                return;
-//            }
-//            onNewGyroscopeValue(sensorEvent);
-//            for (int i = 0; i < 3; i++) {
-//                GyroscopeReadings[i] = sensorEvent.values[i];
-//            }
-//        }
     }
+
 
     @Override
     public void run() {
-        List<Node> nodes;
-        while(true) {
+        while (true) {
 
-            if(sendMessageNow) {
-                try {
-                    nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
-                    for (Node node : nodes) {
-                        System.out.println("WEAR sending " + message + " to " + node);
-                        Wearable.MessageApi.sendMessage(googleClient, node.getId(), message, payload).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
-                            @Override
-                            public void onResult(MessageApi.SendMessageResult sendMessageResult) {
-                                System.out.println("WEAR Result " + sendMessageResult.getStatus());
-                            }
-                        });
-                    }
-                    sendMessageNow = false;
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+            try {
+                synchronized (lock) {
+                    lock.wait();
                 }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
 
+            List<Node> nodes;
+
+            try {
+                nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
+                for (Node node : nodes) {
+                    System.out.println("WEAR sending " + message + " to " + node);
+                    Wearable.MessageApi.sendMessage(googleClient, node.getId(), message, payload).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+                        @Override
+                        public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+                            System.out.println("WEAR Result " + sendMessageResult.getStatus());
+                        }
+                    });
+                }
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            MyService.sendMessage = false;
         }
     }
-
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
@@ -206,6 +214,5 @@ public class MyService extends Service implements Runnable, SensorEventListener,
         Wearable.MessageApi.removeListener(googleClient, this);
         googleClient.disconnect();
     }
-
 
 }
