@@ -2,7 +2,9 @@ package com.cdap.wear_ap.ManagingLifestyle;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
+import android.os.BatteryManager;
 import android.os.Bundle;
 import android.support.wearable.activity.WearableActivity;
 import android.view.WindowManager;
@@ -34,13 +36,16 @@ public class LifestyleMainActivity extends WearableActivity {
         (new Thread(new Runnable() {
             public void run() {
                 while (true) {
+                    final Intent batteryStatus =  registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
                     final float[] accelerometerReadings = MyService.accelerometerReadings;
                     runOnUiThread(new Runnable() {
                         public void run() {
                             mTextView.setText(
                                     "x-axis: " + accelerometerReadings[0] + "\n" +
                                     "y-axis: " + accelerometerReadings[1] + "\n" +
-                                    "z-axis: " + accelerometerReadings[2] + "\n");
+                                    "z-axis: " + accelerometerReadings[2] + "\n\n" +
+                                    "Battery Level "+batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)+"%"
+                            );
                         }
                     });
                     try {
@@ -54,7 +59,7 @@ public class LifestyleMainActivity extends WearableActivity {
 
 
 //        // Enables Always-on
-//        setAmbientEnabled();
+        setAmbientEnabled();
     }
 
     @Override

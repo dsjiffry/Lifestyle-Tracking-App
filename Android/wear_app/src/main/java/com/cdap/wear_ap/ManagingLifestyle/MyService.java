@@ -130,16 +130,17 @@ public class MyService extends Service implements Runnable, SensorEventListener,
             for (int i = 0; i < 3; i++) {
                 accelerometerReadings[i] = sensorEvent.values[i];
             }
-        } else if (sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-            if (Arrays.equals(GyroscopeReadings, sensorEvent.values)) // No change in readings
-            {
-                return;
-            }
-            onNewGyroscopeValue(sensorEvent);
-            for (int i = 0; i < 3; i++) {
-                GyroscopeReadings[i] = sensorEvent.values[i];
-            }
         }
+//        else if (sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+//            if (Arrays.equals(GyroscopeReadings, sensorEvent.values)) // No change in readings
+//            {
+//                return;
+//            }
+//            onNewGyroscopeValue(sensorEvent);
+//            for (int i = 0; i < 3; i++) {
+//                GyroscopeReadings[i] = sensorEvent.values[i];
+//            }
+//        }
     }
 
     @Override

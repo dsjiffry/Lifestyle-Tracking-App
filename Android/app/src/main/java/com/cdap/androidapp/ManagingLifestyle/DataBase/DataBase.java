@@ -2,8 +2,6 @@ package com.cdap.androidapp.ManagingLifestyle.DataBase;
 
 import android.content.Context;
 
-import com.cdap.androidapp.MainActivity;
-
 import androidx.annotation.NonNull;
 import androidx.room.Database;
 import androidx.room.DatabaseConfiguration;
@@ -12,7 +10,9 @@ import androidx.room.Room;
 import androidx.room.RoomDatabase;
 import androidx.sqlite.db.SupportSQLiteOpenHelper;
 
-@Database(entities = PredictionEntity.class, exportSchema = false, version = 1)
+import com.cdap.androidapp.MainActivity;
+
+@Database(entities = {PredictionEntity.class, PercentageEntity.class}, exportSchema = false, version = 1)
 public abstract class DataBase extends RoomDatabase {
     private static DataBase instance;
 
@@ -28,6 +28,7 @@ public abstract class DataBase extends RoomDatabase {
     }
 
     public abstract PredictionDao predictionDao();
+    public abstract PercentageDao percentageDao();
 
 
 

@@ -1,13 +1,13 @@
 package com.cdap.androidapp.ManagingLifestyle.DataBase;
 
-import java.util.List;
-
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.Update;
+
+import java.util.List;
 
 @Dao
 public interface PredictionDao {
@@ -26,6 +26,9 @@ public interface PredictionDao {
 
     @Query("SELECT * FROM prediction_table")
     List<PredictionEntity> loadAllPredictions();
+
+    @Query("SELECT * FROM prediction_table WHERE day=(:day) AND month=(:month) AND year=(:year)")
+    List<PredictionEntity> loadPredictionsByDate(int day, int month, int year);
 
 
 
