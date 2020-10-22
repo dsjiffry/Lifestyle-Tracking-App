@@ -1,11 +1,14 @@
 package com.cdap.wear_ap.ManagingLifestyle;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.IBinder;
 
@@ -23,44 +26,37 @@ import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.Wearable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class MyService extends Service implements Runnable, SensorEventListener, MessageApi.MessageListener, GoogleApiClient.ConnectionCallbacks {
+public class WatchService extends Service implements Runnable, SensorEventListener, MessageApi.MessageListener, GoogleApiClient.ConnectionCallbacks {
 
     private SensorManager sensorManager;
     private Sensor Accelerometer;
-    //    private Sensor Gyroscope;
+    private Context context;
     private GoogleApiClient googleClient;
     private StringBuilder text = new StringBuilder();
     public static float[] accelerometerReadings = {0, 0, 0};
-    //    private float[] GyroscopeReadings = {0, 0, 0};
     private ArrayList<SensorEvent> readings = new ArrayList<>();
-    public static boolean sendMessage = false;
     private Object lock = new Object();
+    private boolean chargingMessageSent = false;
 
     private String message;
     private byte[] payload;
     public Thread thread;
 
-    public MyService() {
-    }
-
     @Override
     public void onCreate() {
         super.onCreate();
+        context = getApplicationContext();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startID) {
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-
         Accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-//        Gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-
         sensorManager.registerListener(this, Accelerometer, 50000);
-//        sensorManager.registerListener(this, Gyroscope, SensorManager.SENSOR_DELAY_NORMAL);
+        context = getApplicationContext();
 
         googleClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
@@ -92,6 +88,23 @@ public class MyService extends Service implements Runnable, SensorEventListener,
      */
     @WorkerThread
     private void onNewAccelerometerValue(SensorEvent sensorEvent) {
+
+        Intent batteryStatus =  registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        // Are we charging / charged?
+        int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+        boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                status == BatteryManager.BATTERY_STATUS_FULL;
+
+        if(isCharging)
+        {
+            if(!chargingMessageSent) {
+                sendMessage("/accelerometer", "CHARGING".getBytes());
+                chargingMessageSent = true;
+            }
+            return;
+        }
+        chargingMessageSent = false;
+
         if (readings.size() < 200) {
             readings.add(sensorEvent);
         } else {
@@ -100,29 +113,26 @@ public class MyService extends Service implements Runnable, SensorEventListener,
                 text.append(reading.values[0] + "#&" + reading.values[1] + "#&" + reading.values[2] + "$%$%");
             }
 
-            setMessage("/accelerometer", text.toString().getBytes());
-//            sendMessage = true;
-            synchronized (lock) {
-                lock.notify();
-            }
+            sendMessage("/accelerometer", text.toString().getBytes());
 
 
             text.setLength(0); //emptying buffer
             readings.clear();
         }
-
-//        text.append(sensorEvent.values[0] + "#&" + sensorEvent.values[1] + "#&" + sensorEvent.values[2]); //can separate values by splitting #&
     }
 
     /**
-     * Create and send message to node on Seperate thread
+     * Create and send message to node on Separate thread
      *
      * @param message path
      * @param payload payload to send
      */
-    private void setMessage(String message, byte[] payload) {
+    private void sendMessage(String message, byte[] payload) {
         this.message = message;
         this.payload = payload;
+        synchronized (lock) {
+            lock.notify();
+        }
     }
 
 
@@ -133,13 +143,9 @@ public class MyService extends Service implements Runnable, SensorEventListener,
         Sensor sensor = sensorEvent.sensor;
 
         if (sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            if (Arrays.equals(accelerometerReadings, sensorEvent.values)) // No change in readings
-            {
-                return;
-            }
             onNewAccelerometerValue(sensorEvent);
             for (int i = 0; i < 3; i++) {
-                accelerometerReadings[i] = sensorEvent.values[i];
+                accelerometerReadings[i] = sensorEvent.values[i]; //For the UI
             }
         }
     }
@@ -175,8 +181,6 @@ public class MyService extends Service implements Runnable, SensorEventListener,
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-
-            MyService.sendMessage = false;
         }
     }
 

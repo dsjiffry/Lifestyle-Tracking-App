@@ -27,7 +27,7 @@ public class LifestyleMainActivity extends WearableActivity {
         context = getApplicationContext();
         mTextView = findViewById(R.id.textView);
 
-        Intent intent = new Intent(this, MyService.class);
+        final Intent intent = new Intent(this, WatchService.class);
         context.startService(intent);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
@@ -36,8 +36,10 @@ public class LifestyleMainActivity extends WearableActivity {
         (new Thread(new Runnable() {
             public void run() {
                 while (true) {
+
+
                     final Intent batteryStatus =  registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-                    final float[] accelerometerReadings = MyService.accelerometerReadings;
+                    final float[] accelerometerReadings = WatchService.accelerometerReadings;
                     runOnUiThread(new Runnable() {
                         public void run() {
                             mTextView.setText(
@@ -53,6 +55,8 @@ public class LifestyleMainActivity extends WearableActivity {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
+
+
                 }
             }
         })).start();

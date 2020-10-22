@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.cdap.wear_ap">
 
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
@@ -50,7 +51,7 @@
                app to run.
         -->
         <service
-            android:name=".ManagingLifestyle.MyService"
+            android:name=".ManagingLifestyle.WatchService"
             android:enabled="true"
             android:exported="true">
             <intent-filter>

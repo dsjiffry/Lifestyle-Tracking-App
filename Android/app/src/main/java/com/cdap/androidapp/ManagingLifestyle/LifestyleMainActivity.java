@@ -1,13 +1,15 @@
 package com.cdap.androidapp.ManagingLifestyle;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
-import com.cdap.androidapp.ManagingLifestyle.DataBase.PredictionEntity;
 import com.cdap.androidapp.R;
 import com.google.android.gms.tasks.Tasks;
 import com.google.android.gms.wearable.Node;
@@ -35,7 +37,6 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
     public final static String SERVER_URL = "http://192.168.8.140:8000/life";
     public TextView textView;
     private URL url = null;
-    private PredictionEntity previousPredictionEntity = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +48,12 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         Thread thread = new Thread(this);
         thread.start();
 
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,}, 1);
+        }
+
     }
 
 
@@ -57,7 +64,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
      */
     @Override
     public void run() {
-        Intent intent = new Intent(context, WearService.class);
+        Intent intent = new Intent(context, PhoneService.class);
         List<Node> nodes = new ArrayList<>();
         while (!checkServerAvailability()) //Wait till server is available
         {
@@ -78,11 +85,11 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         }
 
         while (true) {
-            if (!WearService.isRunning && !nodes.isEmpty()) {
+            if (!PhoneService.isRunning && !nodes.isEmpty()) {
                 context.startService(intent);
             }
 
-            setUITextFromThreads(textView, WearService.prediction);
+            setUITextFromThreads(textView, PhoneService.PREDICTION);
 
             try {
                 Thread.sleep(500);
