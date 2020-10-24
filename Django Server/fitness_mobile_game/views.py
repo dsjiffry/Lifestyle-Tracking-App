@@ -44,9 +44,9 @@ def lifestyle_management_predictions(request):
         activity = "unknown"
 
 
-    json = {
-        "prediction": activity
-    }
+    # json = {
+    #     "prediction": activity
+    # }
     
     # print(prediction)
 

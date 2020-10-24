@@ -1,4 +1,4 @@
-package com.cdap.androidapp.ManagingLifestyle;
+package com.cdap.androidapp.ManagingLifestyle.Models;
 
 import java.io.Serializable;
 

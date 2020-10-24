@@ -3,6 +3,7 @@ package com.cdap.androidapp.ManagingLifestyle;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.widget.TextView;
@@ -10,6 +11,8 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
+import com.cdap.androidapp.MainActivity;
+import com.cdap.androidapp.ManagingLifestyle.Models.SPkeys;
 import com.cdap.androidapp.R;
 import com.google.android.gms.tasks.Tasks;
 import com.google.android.gms.wearable.Node;
@@ -27,6 +30,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -35,6 +39,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
 
     private Context context;
     public final static String SERVER_URL = "http://192.168.8.140:8000/life";
+    public static String ANALYSIS_START_DATE = null;
     public TextView textView;
     private URL url = null;
 
@@ -51,16 +56,28 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_BACKGROUND_LOCATION,
                     Manifest.permission.ACCESS_COARSE_LOCATION,}, 1);
         }
+
+        SharedPreferences sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
+
+        //Will be taking one week to analyze user's current lifestyle
+        if (!sharedPref.contains("isAnalyzingPeriod") || !sharedPref.contains("analysisStartDate") || ANALYSIS_START_DATE == null) {
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putBoolean(SPkeys.IS_ANALYZING_PERIOD, true);
+            editor.putString(SPkeys.ANALYSIS_START_DATE, LocalDate.now().toString());
+            ANALYSIS_START_DATE =  LocalDate.now().toString();
+            editor.apply();
+        }
+
+        SuggestingImprovements.initialize(context);
 
     }
 
 
-
-
     /**
-     * Will send every 200 sensor readings to the server to obtain a prediction
+     * Will check if server is reachable, start the {@link PhoneService} and update UI
      */
     @Override
     public void run() {
@@ -78,9 +95,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
 
         try {
             nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
 
@@ -101,20 +116,13 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
     }
 
 
-
-
-
-
-
-
-
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////// METHODS THAT MAKE LIFE EASIER //////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Threads cannot directly modify ui, those requests need to be run on the UI thread.
+     *
      * @param textView
      * @param message
      */
