@@ -117,7 +117,7 @@ public class PhoneService extends WearableListenerService implements Runnable {
         {
             isCharging = true;
             setSleepingTime();
-            PREDICTION = "Charging";
+            PREDICTION = "Watch is Charging";
             return;
         }
 
@@ -128,7 +128,24 @@ public class PhoneService extends WearableListenerService implements Runnable {
 
         if (message.equalsIgnoreCase("EXERCISING")) //Detecting when Exercising
         {
+            PREDICTION = "Exercising";
+            LocalDateTime rightNow = LocalDateTime.now();
+            int hour = sharedPref.getInt(SPkeys.EXERCISE_TIME_HOUR, -1);
+            int minute = sharedPref.getInt(SPkeys.EXERCISE_TIME_MINUTE, -1);
 
+            if (hour > 0 && minute > 0) {
+                hour = ((hour + rightNow.getHour()) / 2);
+                minute = ((hour + rightNow.getMinute()) / 2);
+            } else {
+                hour = rightNow.getHour();
+                minute = rightNow.getMinute();
+            }
+
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putInt(SPkeys.EXERCISE_TIME_HOUR, hour);
+            editor.putInt(SPkeys.EXERCISE_TIME_MINUTE, minute);
+            editor.apply();
+            return;
         }
 
 

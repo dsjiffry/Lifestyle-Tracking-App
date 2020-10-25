@@ -87,21 +87,33 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         {
             setUITextFromThreads(textView, "Server Unavailable");
             try {
-                Thread.sleep(1000);
+                Thread.sleep(10000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
 
-        try {
-            nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
-        } catch (ExecutionException | InterruptedException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
+//        } catch (ExecutionException | InterruptedException e) {
+//            e.printStackTrace();
+//        }
 
         while (true) {
+            try {
+                nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
+            } catch (ExecutionException | InterruptedException e) {
+                e.printStackTrace();
+            }
+
             if (!PhoneService.isRunning && !nodes.isEmpty()) {
                 context.startService(intent);
+            }
+
+            if(nodes.isEmpty())
+            {
+                PhoneService.PREDICTION = "Watch not connected";
+                context.stopService(intent);
             }
 
             setUITextFromThreads(textView, PhoneService.PREDICTION);

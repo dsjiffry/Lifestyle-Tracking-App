@@ -68,8 +68,6 @@ public class WatchService extends Service implements Runnable, SensorEventListen
         sensorEventListener = this;
 
         sensorManager.registerListener(this, accelerometer, 50000);
-
-//        sensorManager.registerListener(sensorEventListener, heartRate, SensorManager.SENSOR_DELAY_NORMAL);
         context = getApplicationContext();
 
         googleClient = new GoogleApiClient.Builder(this)
@@ -98,7 +96,6 @@ public class WatchService extends Service implements Runnable, SensorEventListen
     /**
      * Will store accelerometer reading and send to phone
      *
-     * @param sensorEvent
      */
     @WorkerThread
     private void onNewAccelerometerValue(SensorEvent sensorEvent) {
@@ -152,20 +149,23 @@ public class WatchService extends Service implements Runnable, SensorEventListen
 
 //  ----------------------------------------------------- Overridden Methods -----------------------------------------------------
 
+    /**
+     * Accelerometer values are are sent to onNewAccelerometerValue()
+     * If heart rate is in exercising range for an hour then phone is notified
+     */
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
         Sensor sensor = sensorEvent.sensor;
 
         if (sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
             onNewAccelerometerValue(sensorEvent);
-            for (int i = 0; i < 3; i++) {
-                accelerometerReadings[i] = sensorEvent.values[i]; //For the UI
-            }
+            //For the UI
+            System.arraycopy(sensorEvent.values, 0, accelerometerReadings, 0, 3);
         }
         if (sensor.getType() == Sensor.TYPE_HEART_RATE) {
             heartRateReading = sensorEvent.values[0];
             System.out.println("HEARTRATE: " + heartRateReading);
-            if (heartRateReading > 160.0f) // value needs to change with age
+            if (heartRateReading > 160.0f) // TODO: value needs to change with age
             {
                 numberOfHeartRateReadings++;
                 if (numberOfHeartRateReadings > 6) {
@@ -205,9 +205,7 @@ public class WatchService extends Service implements Runnable, SensorEventListen
                         }
                     });
                 }
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
+            } catch (ExecutionException | InterruptedException e) {
                 e.printStackTrace();
             }
 
