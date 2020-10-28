@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.KeyguardManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -39,7 +40,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -47,6 +47,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Analyzes user's current lifestyle
@@ -57,6 +58,7 @@ import java.util.List;
  * workplace location
  * work hours
  * exercise time
+ * method of transport to work
  */
 public class PhoneService extends WearableListenerService implements Runnable {
 
@@ -66,7 +68,7 @@ public class PhoneService extends WearableListenerService implements Runnable {
     public static Boolean isAnalysisPeriod = true;    //Used to check if we are still in analysis week
     public final static String SERVER_URL = "http://192.168.8.140:8000/life";
 
-    private ArrayList<Reading> values = new ArrayList<>();    // Stores 200 accelerometer readings
+    private final ArrayList<Reading> values = new ArrayList<>();    // Stores 200 accelerometer readings
     private Context context;
     private URL url = null;
     private PredictionEntity previousPredictionEntity = null;
@@ -75,14 +77,11 @@ public class PhoneService extends WearableListenerService implements Runnable {
     private boolean isUnlocked = false;
     private SharedPreferences sharedPref;
     private final Handler handler = new Handler();
-    private Runnable runnable;
-    private ArrayList<Double> workLongitude = new ArrayList<>();
-    private ArrayList<Double> workLatitude = new ArrayList<>();
+    private ArrayList<Double> workLongitude;
+    private ArrayList<Double> workLatitude;
     private IntentFilter intentFilter;
     private BroadcastReceiver broadcastReceiver;
 
-
-    private Thread thread;
     private final Object makePredictionLock = new Object();
 
     @SuppressLint("WakelockTimeout")
@@ -91,6 +90,14 @@ public class PhoneService extends WearableListenerService implements Runnable {
         super.onCreate();
         isRunning = true;
         context = getApplicationContext();
+        workLongitude = new ArrayList<>();
+        workLatitude = new ArrayList<>();
+
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        isRunning = true;
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "69")
                 .setContentTitle("Receiving sensor readings")
@@ -111,10 +118,6 @@ public class PhoneService extends WearableListenerService implements Runnable {
         wakeLock.acquire();
 
         sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
-        thread = new Thread(this);
-        thread.start();
-
-
 
 
         intentFilter = new IntentFilter();
@@ -123,8 +126,7 @@ public class PhoneService extends WearableListenerService implements Runnable {
             @Override
             public void onReceive(Context context, Intent intent) {
                 if (intent.getAction().equalsIgnoreCase(Intent.ACTION_SCREEN_OFF)) {
-                    if(isUnlocked)
-                    {
+                    if (isUnlocked) {
                         setSleepingTime();
                     }
                     unregisterReceiver(this);
@@ -132,8 +134,10 @@ public class PhoneService extends WearableListenerService implements Runnable {
             }
         };
 
+        Thread thread = new Thread(this);
+        thread.start();
 
-
+        return Service.START_STICKY;
     }
 
 
@@ -141,8 +145,6 @@ public class PhoneService extends WearableListenerService implements Runnable {
      * If the message received from the watch is a sensor reading set the thread will be asked to obtain the prediction.
      * If the message received says "charging" then setSleepingTime() will be called,
      * when watch is done charging setWakingTime() will be called.
-     *
-     * @param messageEvent
      */
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
@@ -157,11 +159,11 @@ public class PhoneService extends WearableListenerService implements Runnable {
             // The user might continue to use the phone even though watch is charging
             DisplayManager dm = (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
             KeyguardManager myKM = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
-            if( !myKM.inKeyguardRestrictedInputMode() ) { // Phone is unlocked
+            if (!myKM.inKeyguardRestrictedInputMode()) { // Phone is unlocked
                 for (Display display : dm.getDisplays()) {
                     if (display.getState() != Display.STATE_OFF && display.getState() != Display.FLAG_PRIVATE) {    // Display is on
                         isUnlocked = true;
-                        registerReceiver(broadcastReceiver,intentFilter);
+                        registerReceiver(broadcastReceiver, intentFilter);
                     }
                 }
             }
@@ -169,7 +171,7 @@ public class PhoneService extends WearableListenerService implements Runnable {
             return;
         }
 
-        if (isCharging) {
+        if (isCharging) { // When we get first sensor reading after taking off charger
             setWakingTime();
             isCharging = false;
         }
@@ -194,97 +196,113 @@ public class PhoneService extends WearableListenerService implements Runnable {
         }
 
         synchronized (makePredictionLock) { //making prediction via thread
-            makePredictionLock.notify();
+            makePredictionLock.notifyAll();
         }
     }
 
+
+    @Override
+    public void run() {
+        sendPostMessage(); //Starting up the thread
+        determineWorkHours(); //runs in separate thread
+        determineWorkplaceLocation(); //runs in separate thread
+
+        while (isAnalysisPeriod) {
+
+            checkEndOfAnalysisPeriod();
+            determineWorkplaceTravelMethod();
+
+            try {
+                Thread.sleep(600000);   // 10 min
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+    }
 
     /**
      * Will make a POST request to backend server and obtain the predicted activity
      * This will also store the Predicted Activity in the database.
      */
-    @Override
-    public void run() {
-        while (true) {
-            try {
-                synchronized (makePredictionLock) {
-                    makePredictionLock.wait();
+    public void sendPostMessage() {
+        (new Thread(() -> {
+            while (true) {
+                try {
+                    synchronized (makePredictionLock) {
+                        makePredictionLock.wait();
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+
+
+                try {
+                    if (url == null) {
+                        url = new URL(SERVER_URL);
+                    }
+
+                    //Creating JSON body to send
+                    JSONObject jsonObject = new JSONObject();
+                    JSONArray jsonArray = new JSONArray();
+                    JSONArray readingsArray = new JSONArray();
+                    for (int i = 0; i < 200; i++) {
+                        JSONArray temp = new JSONArray();
+                        temp.put(0, values.get(i).xAxis);
+                        temp.put(1, values.get(i).yAxis);
+                        temp.put(2, values.get(i).zAxis);
+                        readingsArray.put(temp);
+                    }
+                    jsonArray.put(readingsArray);
+                    jsonObject.put("data", jsonArray);
+
+                    //Making POST request
+                    URL url = new URL(SERVER_URL);
+                    HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+                    httpURLConnection.setDoOutput(true);
+                    httpURLConnection.setRequestMethod("POST");
+                    httpURLConnection.setRequestProperty("Content-Type", "application/json");
+                    httpURLConnection.connect();
+
+                    DataOutputStream wr = new DataOutputStream(httpURLConnection.getOutputStream());
+                    wr.writeBytes(jsonObject.toString());
+                    wr.flush();
+                    wr.close();
+
+                    //Getting Response
+                    InputStream response = httpURLConnection.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(response));
+                    StringBuilder stringBuilder = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        stringBuilder.append(line).append("\n");
+                    }
+                    PREDICTION = stringBuilder.toString().replaceAll("\"", "").trim();
+
+                    DataBaseManager dataBaseManager = new DataBaseManager(context);
+                    LocalDateTime localDateTime = LocalDateTime.now();
+                    PredictionEntity predictionEntity = new PredictionEntity(
+                            localDateTime.getDayOfMonth(),
+                            localDateTime.getMonthValue(),
+                            localDateTime.getYear(),
+                            localDateTime.getHour(),
+                            localDateTime.getMinute(),
+                            PREDICTION
+                    );
+                    dataBaseManager.addPrediction(predictionEntity);
+                    if (previousPredictionEntity != null && previousPredictionEntity.day != predictionEntity.day) {
+                        PercentageManager.saveDailyPercentages(context, previousPredictionEntity);
+                    }
+
+
+                    previousPredictionEntity = predictionEntity;
+                } catch (IOException | JSONException e) {
+                    e.printStackTrace();
+                }
             }
-            checkEndOfAnalysisPeriod();
-
-            try {
-                if (url == null) {
-                    url = new URL(SERVER_URL);
-                }
-
-                //Creating JSON body to send
-                JSONObject jsonObject = new JSONObject();
-                JSONArray jsonArray = new JSONArray();
-                JSONArray readingsArray = new JSONArray();
-                for (int i = 0; i < 200; i++) {
-                    JSONArray temp = new JSONArray();
-                    temp.put(0, values.get(i).xAxis);
-                    temp.put(1, values.get(i).yAxis);
-                    temp.put(2, values.get(i).zAxis);
-                    readingsArray.put(temp);
-                }
-                jsonArray.put(readingsArray);
-                jsonObject.put("data", jsonArray);
-
-                //Making POST request
-                URL url = new URL(SERVER_URL);
-                HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
-                httpURLConnection.setDoOutput(true);
-                httpURLConnection.setRequestMethod("POST");
-                httpURLConnection.setRequestProperty("Content-Type", "application/json");
-                httpURLConnection.connect();
-
-                DataOutputStream wr = new DataOutputStream(httpURLConnection.getOutputStream());
-                wr.writeBytes(jsonObject.toString());
-                wr.flush();
-                wr.close();
-
-                //Getting Response
-                InputStream response = httpURLConnection.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(response));
-                StringBuilder stringBuilder = new StringBuilder();
-                String line = null;
-                while ((line = reader.readLine()) != null) {
-                    stringBuilder.append(line + "\n");
-                }
-                PREDICTION = stringBuilder.toString().replaceAll("\"", "").trim();
-
-                DataBaseManager dataBaseManager = new DataBaseManager(context);
-                LocalDateTime localDateTime = LocalDateTime.now();
-                PredictionEntity predictionEntity = new PredictionEntity(
-                        localDateTime.getDayOfMonth(),
-                        localDateTime.getMonthValue(),
-                        localDateTime.getYear(),
-                        localDateTime.getHour(),
-                        localDateTime.getMinute(),
-                        PREDICTION
-                );
-                dataBaseManager.addPrediction(predictionEntity);
-                if (previousPredictionEntity != null && previousPredictionEntity.day != predictionEntity.day) {
-                    PercentageManager.saveDailyPercentages(context, previousPredictionEntity);
-                }
-
-
-                previousPredictionEntity = predictionEntity;
-            } catch (MalformedURLException e) { //url = new URL(SERVER_URL);
-                e.printStackTrace();
-            } catch (IOException e) { // URLConnection conn = url.openConnection();
-                e.printStackTrace();
-            } catch (JSONException e) { // jsonObject.put(...);
-                e.printStackTrace();
-            }
-        }
-
+        })).start();
     }
-
 
     /**
      * Assuming user plugs watch to charge before sleeping,
@@ -317,7 +335,6 @@ public class PhoneService extends WearableListenerService implements Runnable {
             editor.apply();
         }
     }
-
 
     /**
      * Assuming wears watch after waking up,
@@ -357,9 +374,6 @@ public class PhoneService extends WearableListenerService implements Runnable {
             }
 
             editor.apply();
-
-        } else if (rightNow.getHour() > 9) {
-            determineWorkplaceLocation();
         }
     }
 
@@ -367,6 +381,10 @@ public class PhoneService extends WearableListenerService implements Runnable {
      * Will record the time when the watch says the user is Exercising
      */
     private void setExercisingTime() {
+        if (!isAnalysisPeriod) {
+            return;
+        }
+
         LocalDateTime rightNow = LocalDateTime.now();
         int hour = sharedPref.getInt(SPkeys.EXERCISE_TIME_HOUR, -1);
         int minute = sharedPref.getInt(SPkeys.EXERCISE_TIME_MINUTE, -1);
@@ -382,48 +400,40 @@ public class PhoneService extends WearableListenerService implements Runnable {
 
         //Exercise days
         String days;
-        if(sharedPref.contains(SPkeys.EXERCISE_DAYS)) {
+        if (sharedPref.contains(SPkeys.EXERCISE_DAYS)) {
             days = sharedPref.getString(SPkeys.EXERCISE_DAYS, "") + ";" + rightNow.getDayOfWeek().toString();
-        }
-        else
-        {
+        } else {
             days = rightNow.getDayOfWeek().toString();
         }
 
         //Exercise Type
         String type;
         DataBaseManager dataBaseManager = new DataBaseManager(context);
-        hour = rightNow.getHour();
-        if(rightNow.getMinute()<20)
-        {
-            hour = rightNow.getHour()-1;
+        int typeHour = rightNow.getHour();
+        if (rightNow.getMinute() < 20) {
+            typeHour = rightNow.getHour() - 1;
         }
 
-        List<PredictionEntity> predictions = dataBaseManager.getAllPredictions(hour, rightNow.getDayOfMonth(), rightNow.getMonthValue(), rightNow.getYear());
+        List<PredictionEntity> predictions = dataBaseManager.getAllPredictions(typeHour, rightNow.getDayOfMonth(), rightNow.getMonthValue(), rightNow.getYear());
         int total, running;
         total = running = 0;
-        for(PredictionEntity prediction : predictions)
-        {
+        for (PredictionEntity prediction : predictions) {
             total++;
-            if(prediction.activity.equalsIgnoreCase(UserActivities.JOGGING))
-            {
+            if (prediction.activity.equalsIgnoreCase(UserActivities.JOGGING)) {
                 running++;
             }
         }
-        if(((double)running/total) > 0.8)
-        {
+        if (((double) running / total) > 0.8) {
             type = "running";
-        }
-        else
-        {
+        } else {
             type = "gym";
         }
 
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putInt(SPkeys.EXERCISE_TIME_HOUR, hour);
         editor.putInt(SPkeys.EXERCISE_TIME_MINUTE, minute);
-        editor.putString(SPkeys.EXERCISE_DAYS,days);
-        editor.putString(SPkeys.EXERCISE_TYPE,type);
+        editor.putString(SPkeys.EXERCISE_DAYS, days);
+        editor.putString(SPkeys.EXERCISE_TYPE, type);
         editor.apply();
     }
 
@@ -432,10 +442,10 @@ public class PhoneService extends WearableListenerService implements Runnable {
      * by checking the location after 11am and before 3pm.
      */
     private void determineWorkplaceLocation() {
-        runnable = new Runnable() {
+        Runnable runnable = new Runnable() {
             public void run() {
                 if (!isAnalysisPeriod) {
-                    handler.removeCallbacks(runnable);
+                    handler.removeCallbacks(this);
                     return;
                 }
                 LocalDateTime rightNow = LocalDateTime.now();
@@ -444,19 +454,21 @@ public class PhoneService extends WearableListenerService implements Runnable {
                     if (rightNow.getHour() >= 11 && rightNow.getHour() <= 15) //in between 11am and 3pm
                     {
                         Location currentLocation = getCurrentLocation();
-
                         workLongitude.add(currentLocation.getLongitude());
                         workLatitude.add(currentLocation.getLongitude());
+
+                        handler.postDelayed(this, 3600000); //Once per hour
+//                        Toast.makeText(context, "ONE Hour", Toast.LENGTH_LONG).show();
+
                     } else {
                         double latitude = Collections.max(workLatitude);
                         double longitude = Collections.max(workLongitude);
                         SharedPreferences.Editor editor = sharedPref.edit();
                         editor.putString(SPkeys.WORK_LATITUDE, String.valueOf(latitude));
                         editor.putString(SPkeys.WORK_LONGITUDE, String.valueOf(longitude));
+                        editor.apply();
                     }
 
-//                    Toast.makeText(context, "ONE Hour", Toast.LENGTH_LONG).show();
-                    handler.postDelayed(this, 3600000); //Once per hour
 
                 } else {
                     long duration = (24 - rightNow.getHour()) * 3600000; //Time to next midnight in milliseconds
@@ -469,19 +481,126 @@ public class PhoneService extends WearableListenerService implements Runnable {
     }
 
     /**
+     * Determine how the user gets to work
+     */
+    private void determineWorkplaceTravelMethod() {
+        if (!isAnalysisPeriod) {
+            return;
+        }
+
+        //Detecting how user goes to work
+        if (!sharedPref.contains(SPkeys.WORK_TRAVEL_METHOD)) {
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putString(SPkeys.WORK_TRAVEL_METHOD, "walking");
+            editor.apply();
+        }
+
+        int wakeHour = sharedPref.getInt(SPkeys.WAKE_TIME_HOUR, -1);
+        int atWorkHour = sharedPref.getInt(SPkeys.WORK_START_TIME_HOUR, -1);
+        if (wakeHour >= 0 && atWorkHour >= 0) {
+            LocalDateTime rightNow = LocalDateTime.now();
+            if (rightNow.getHour() > wakeHour && rightNow.getHour() < atWorkHour) {
+                if (getCurrentLocation().getSpeed() > 3.0f) // 3 m/s = 10.8 km/h
+                {
+                    SharedPreferences.Editor editor = sharedPref.edit();
+                    editor.putString(SPkeys.WORK_TRAVEL_METHOD, "vehicle");
+                    editor.apply();
+                }
+            }
+        }
+    }
+
+    /**
+     * Will monitor user's location and record the time when they enter the workplace and when they leave the workplace
+     */
+    private void determineWorkHours() {
+        final AtomicBoolean isAtWork = new AtomicBoolean(false);
+        Runnable runnable = new Runnable() {
+            public void run() {
+                if (!isAnalysisPeriod) {
+                    handler.removeCallbacks(this);
+                    return;
+                }
+
+                if (!sharedPref.contains(SPkeys.WORK_LATITUDE) && !sharedPref.contains(SPkeys.WORK_LONGITUDE)) { //Should not happen
+                    return;
+                }
+
+                double workLatitude = Double.parseDouble(sharedPref.getString(SPkeys.WORK_LATITUDE, ""));
+                double workLongitude = Double.parseDouble(sharedPref.getString(SPkeys.WORK_LONGITUDE, ""));
+                Location currentLocation = getCurrentLocation();
+                LocalDateTime rightNow = LocalDateTime.now();
+
+                if (!isAtWork.get()) { ///////////////////////////////////// Getting Time user arrived at Workplace ///////////////////////////
+                    // Allowing Error margin of 0.0005
+                    if (currentLocation.getLongitude() < workLongitude + 0.0005 && currentLocation.getLongitude() > workLongitude - 0.0005 &&
+                            currentLocation.getLatitude() < workLatitude + 0.0005 && currentLocation.getLatitude() > workLatitude - 0.0005) {
+                        SharedPreferences.Editor editor = sharedPref.edit();
+                        if (sharedPref.contains(SPkeys.WORK_START_TIME_HOUR) && sharedPref.contains(SPkeys.WORK_START_TIME_MINUTE)) {
+                            if (rightNow.getHour() < sharedPref.getInt(SPkeys.WORK_START_TIME_HOUR, 99)) {
+
+                                editor.putInt(SPkeys.WORK_START_TIME_HOUR, rightNow.getHour());
+                                if (rightNow.getMinute() < sharedPref.getInt(SPkeys.WORK_START_TIME_MINUTE, 99)) {
+                                    editor.putInt(SPkeys.WORK_START_TIME_MINUTE, rightNow.getMinute());
+                                }
+                            }
+                        } else {
+                            editor.putInt(SPkeys.WORK_START_TIME_HOUR, rightNow.getHour());
+                            editor.putInt(SPkeys.WORK_START_TIME_MINUTE, rightNow.getMinute());
+                        }
+                        editor.apply();
+                        isAtWork.set(true);
+                    } else {
+                        handler.postDelayed(this, 600000); // 10 minutes
+                        //To stop use: handler.removeCallbacks(runnable);
+                    }
+                } else {///////////////////////////////////// Getting Time user leaves Workplace /////////////////////////////////////////////
+                    currentLocation = getCurrentLocation();
+                    rightNow = LocalDateTime.now();
+
+                    // Allowing Error margin of 0.0005
+                    if (currentLocation.getLongitude() > workLongitude + 0.0005 && currentLocation.getLongitude() < workLongitude - 0.0005 &&
+                            currentLocation.getLatitude() > workLatitude + 0.0005 && currentLocation.getLatitude() < workLatitude - 0.0005) {
+                        SharedPreferences.Editor editor = sharedPref.edit();
+                        if (sharedPref.contains(SPkeys.WORK_END_TIME_HOUR) && sharedPref.contains(SPkeys.WORK_END_TIME_MINUTE)) {
+                            if (rightNow.getHour() > sharedPref.getInt(SPkeys.WORK_END_TIME_HOUR, 99)) {
+                                editor.putInt(SPkeys.WORK_END_TIME_HOUR, rightNow.getHour());
+                                if (rightNow.getMinute() > sharedPref.getInt(SPkeys.WORK_END_TIME_MINUTE, 99)) {
+                                    editor.putInt(SPkeys.WORK_END_TIME_MINUTE, rightNow.getMinute());
+                                }
+                            }
+                        } else {
+                            editor.putInt(SPkeys.WORK_END_TIME_HOUR, rightNow.getHour());
+                            editor.putInt(SPkeys.WORK_END_TIME_MINUTE, rightNow.getMinute());
+                        }
+                        editor.apply();
+                        isAtWork.set(false);
+                    } else {
+                        handler.postDelayed(this, 600000); // 10 minutes
+                        //To stop use: handler.removeCallbacks(runnable);
+                    }
+                }
+//                handler.postDelayed(this, 18000000 ); // 5 hours
+            }
+        };
+        runnable.run();
+    }
+
+    /**
      * Once the week of analyzing is over we need to start the {@link SuggestingImprovements} service
      */
     private void checkEndOfAnalysisPeriod() {
-        LocalDate today = LocalDate.now();
-        LocalDate analysisStartDate = LocalDate.parse(LifestyleMainActivity.ANALYSIS_START_DATE);
+        LocalDate rightNow = LocalDate.now();
+        LocalDate analysisStartDate = LocalDate.parse(sharedPref.getString(SPkeys.ANALYSIS_START_DATE, ""));
 
-        if (today.isAfter(analysisStartDate.plusWeeks(1))) {
+        if (rightNow.isAfter(analysisStartDate.plusWeeks(1))) {
             isAnalysisPeriod = false;
             return;
         }
 
         isAnalysisPeriod = true;
     }
+
 
     /**
      * Getting current location
@@ -507,14 +626,8 @@ public class PhoneService extends WearableListenerService implements Runnable {
 
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        isRunning = true;
-        return super.onStartCommand(intent, flags, startId);
-    }
-
-    @Override
     public void onDestroy() {
-        if (wakeLock.isHeld()) {
+        if (wakeLock != null && wakeLock.isHeld()) {
             wakeLock.release();
         }
         super.onDestroy();

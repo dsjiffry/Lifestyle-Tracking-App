@@ -22,7 +22,6 @@ public class LifestyleMainActivity extends WearableActivity {
     private TextView mTextView;
     private Context context;
     private final Object displayLock = new Object();
-//    private float[] accelerometerReadings = {0, 0, 0};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,7 +38,7 @@ public class LifestyleMainActivity extends WearableActivity {
         final Intent intent = new Intent(this, WatchService.class);
         startService(intent);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-//        setAmbientEnabled();
+        setAmbientEnabled();
 
 
         (new Thread(new Runnable() {

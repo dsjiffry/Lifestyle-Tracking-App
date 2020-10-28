@@ -7,13 +7,16 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import com.cdap.androidapp.MainActivity;
 import com.cdap.androidapp.ManagingLifestyle.Models.SPkeys;
 import com.cdap.androidapp.R;
+import com.google.android.gms.common.util.ArrayUtils;
 import com.google.android.gms.tasks.Tasks;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.Wearable;
@@ -38,8 +41,8 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
 
     private Context context;
     public final static String SERVER_URL = "http://192.168.8.140:8000/life";
-    public static String ANALYSIS_START_DATE = null;
     public TextView textView;
+    private SharedPreferences sharedPref;
     private URL url = null;
 
     @Override
@@ -48,39 +51,51 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         setContentView(R.layout.activity_lifestyle_main);
         context = getApplicationContext();
         textView = findViewById(R.id.mainText);
+        sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
 
-        Thread thread = new Thread(this);
-        thread.start();
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.ACCESS_BACKGROUND_LOCATION,
                     Manifest.permission.ACCESS_COARSE_LOCATION,}, 1);
+        }   //Granted permission will fire onRequestPermissionsResult(...)
+        else {
+            Thread thread = new Thread(this);
+            thread.start();
         }
-
-        SharedPreferences sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
-
-        //Will be taking one week to analyze user's current lifestyle
-        if (!sharedPref.contains("isAnalyzingPeriod") || !sharedPref.contains("analysisStartDate") || ANALYSIS_START_DATE == null) {
-            SharedPreferences.Editor editor = sharedPref.edit();
-            editor.putBoolean(SPkeys.IS_ANALYZING_PERIOD, true);
-            editor.putString(SPkeys.ANALYSIS_START_DATE, LocalDate.now().toString());
-            ANALYSIS_START_DATE = LocalDate.now().toString();
-            editor.apply();
-        }
-
-        SuggestingImprovements.initialize(context);
-
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (!ArrayUtils.contains(grantResults, PackageManager.PERMISSION_DENIED)) {
+            Thread thread = new Thread(this);
+            thread.start();
+        } else {
+            Toast.makeText(context, "Location permission is Needed", Toast.LENGTH_LONG).show();
+            this.finish();
+        }
+    }
 
     /**
      * Will check if server is reachable, start the {@link PhoneService} and update UI
      */
     @Override
     public void run() {
-        Intent intent = new Intent(context, PhoneService.class);
+
+        SharedPreferences sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
+
+        //Will be taking one week to analyze user's current lifestyle
+        if (!sharedPref.contains(SPkeys.IS_ANALYZING_PERIOD) || !sharedPref.contains(SPkeys.ANALYSIS_START_DATE)) {
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putBoolean(SPkeys.IS_ANALYZING_PERIOD, true);
+            editor.putString(SPkeys.ANALYSIS_START_DATE, LocalDate.now().toString());
+            editor.apply();
+        }
+
+        Intent phoneServiceIntent = new Intent(context, PhoneService.class);
+        Intent suggestingImprovementsIntent = new Intent(context, SuggestingImprovements.class);
         List<Node> nodes = new ArrayList<>();
         while (!checkServerAvailability()) //Wait till server is available
         {
@@ -92,26 +107,49 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
             }
         }
 
-        while (true) {
+        while (isAnalysisPeriod()) {
             try {
                 nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
 
                 if (!PhoneService.isRunning && !nodes.isEmpty()) {
-                    context.startService(intent);
+                    context.startService(phoneServiceIntent);
                 }
 
                 if (nodes.isEmpty()) {
                     PhoneService.PREDICTION = "Watch not connected";
-                    context.stopService(intent);
+                    context.stopService(phoneServiceIntent);
                 }
 
                 setUITextFromThreads(textView, PhoneService.PREDICTION);
-
                 Thread.sleep(500);
 
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
+        }
+
+
+
+        while (true) {
+            if (!PhoneService.isRunning && !nodes.isEmpty()) {
+                context.startService(phoneServiceIntent);
+            }
+            if (!SuggestingImprovements.isRunning && !nodes.isEmpty()) {
+                context.startService(suggestingImprovementsIntent);
+            }
+
+            if(nodes.isEmpty())
+            {
+                context.stopService(phoneServiceIntent);
+                context.stopService(suggestingImprovementsIntent);
+            }
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
         }
 
     }
@@ -125,15 +163,10 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
      * Threads cannot directly modify ui, those requests need to be run on the UI thread.
      *
      * @param textView to be modified
-     * @param message to be set in the TextView
+     * @param message  to be set in the TextView
      */
     public void setUITextFromThreads(final TextView textView, final String message) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                textView.setText(message);
-            }
-        });
+        runOnUiThread(() -> textView.setText(message));
     }
 
     /**
@@ -178,7 +211,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
             StringBuilder stringBuilder = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
-                stringBuilder.append(line + "\n");
+                stringBuilder.append(line).append("\n");
             }
 
             if (!stringBuilder.toString().isEmpty()) {
@@ -193,5 +226,14 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         return false;
     }
 
+    private boolean isAnalysisPeriod() {
+        LocalDate rightNow = LocalDate.now();
+        LocalDate analysisStartDate = LocalDate.parse(sharedPref.getString(SPkeys.ANALYSIS_START_DATE, ""));
 
+        if (rightNow.isAfter(analysisStartDate.plusWeeks(1))) {
+            return false;
+        }
+
+        return true;
+    }
 }

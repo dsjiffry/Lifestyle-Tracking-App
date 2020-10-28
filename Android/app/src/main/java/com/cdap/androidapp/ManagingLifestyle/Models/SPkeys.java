@@ -11,6 +11,7 @@ public class SPkeys {
     public static String WORK_START_TIME_MINUTE = "lifestyle_" + "workStartTimeMinute";
     public static String WORK_END_TIME_HOUR = "lifestyle_" + "workEndTimeHour";
     public static String WORK_END_TIME_MINUTE = "lifestyle_" + "workEndTimeMinute";
+    public static String WORK_TRAVEL_METHOD = "lifestyle_" + "workTravelMethod";
 
     public static String EXERCISE_TIME_HOUR = "lifestyle_" + "exerciseTimeHour";
     public static String EXERCISE_TIME_MINUTE = "lifestyle_" + "exerciseTimeMinute";
