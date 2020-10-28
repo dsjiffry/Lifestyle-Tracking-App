@@ -1,16 +1,20 @@
 package com.cdap.androidapp.ManagingLifestyle;
 
 import android.annotation.SuppressLint;
+import android.app.KeyguardManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.hardware.display.DisplayManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Handler;
 import android.os.PowerManager;
-import android.widget.Toast;
+import android.view.Display;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -18,6 +22,7 @@ import androidx.core.app.NotificationManagerCompat;
 import com.cdap.androidapp.MainActivity;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.DataBaseManager;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.PredictionEntity;
+import com.cdap.androidapp.ManagingLifestyle.DataBase.UserActivities;
 import com.cdap.androidapp.ManagingLifestyle.Models.Reading;
 import com.cdap.androidapp.ManagingLifestyle.Models.SPkeys;
 import com.cdap.androidapp.R;
@@ -44,7 +49,14 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Listens to messages from the watch
+ * Analyzes user's current lifestyle
+ * Listens to messages from the watch and identifies user's:
+ * wake-up time
+ * sleep time
+ * home location
+ * workplace location
+ * work hours
+ * exercise time
  */
 public class PhoneService extends WearableListenerService implements Runnable {
 
@@ -60,15 +72,20 @@ public class PhoneService extends WearableListenerService implements Runnable {
     private PredictionEntity previousPredictionEntity = null;
     private PowerManager.WakeLock wakeLock = null;
     private boolean isCharging = false;
+    private boolean isUnlocked = false;
     private SharedPreferences sharedPref;
     private final Handler handler = new Handler();
     private Runnable runnable;
     private ArrayList<Double> workLongitude = new ArrayList<>();
     private ArrayList<Double> workLatitude = new ArrayList<>();
+    private IntentFilter intentFilter;
+    private BroadcastReceiver broadcastReceiver;
+
 
     private Thread thread;
     private final Object makePredictionLock = new Object();
 
+    @SuppressLint("WakelockTimeout")
     @Override
     public void onCreate() {
         super.onCreate();
@@ -97,6 +114,26 @@ public class PhoneService extends WearableListenerService implements Runnable {
         thread = new Thread(this);
         thread.start();
 
+
+
+
+        intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
+        broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.getAction().equalsIgnoreCase(Intent.ACTION_SCREEN_OFF)) {
+                    if(isUnlocked)
+                    {
+                        setSleepingTime();
+                    }
+                    unregisterReceiver(this);
+                }
+            }
+        };
+
+
+
     }
 
 
@@ -117,6 +154,17 @@ public class PhoneService extends WearableListenerService implements Runnable {
         {
             isCharging = true;
             setSleepingTime();
+            // The user might continue to use the phone even though watch is charging
+            DisplayManager dm = (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
+            KeyguardManager myKM = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
+            if( !myKM.inKeyguardRestrictedInputMode() ) { // Phone is unlocked
+                for (Display display : dm.getDisplays()) {
+                    if (display.getState() != Display.STATE_OFF && display.getState() != Display.FLAG_PRIVATE) {    // Display is on
+                        isUnlocked = true;
+                        registerReceiver(broadcastReceiver,intentFilter);
+                    }
+                }
+            }
             PREDICTION = "Watch is Charging";
             return;
         }
@@ -129,22 +177,7 @@ public class PhoneService extends WearableListenerService implements Runnable {
         if (message.equalsIgnoreCase("EXERCISING")) //Detecting when Exercising
         {
             PREDICTION = "Exercising";
-            LocalDateTime rightNow = LocalDateTime.now();
-            int hour = sharedPref.getInt(SPkeys.EXERCISE_TIME_HOUR, -1);
-            int minute = sharedPref.getInt(SPkeys.EXERCISE_TIME_MINUTE, -1);
-
-            if (hour > 0 && minute > 0) {
-                hour = ((hour + rightNow.getHour()) / 2);
-                minute = ((hour + rightNow.getMinute()) / 2);
-            } else {
-                hour = rightNow.getHour();
-                minute = rightNow.getMinute();
-            }
-
-            SharedPreferences.Editor editor = sharedPref.edit();
-            editor.putInt(SPkeys.EXERCISE_TIME_HOUR, hour);
-            editor.putInt(SPkeys.EXERCISE_TIME_MINUTE, minute);
-            editor.apply();
+            setExercisingTime();
             return;
         }
 
@@ -248,8 +281,6 @@ public class PhoneService extends WearableListenerService implements Runnable {
             } catch (JSONException e) { // jsonObject.put(...);
                 e.printStackTrace();
             }
-
-
         }
 
     }
@@ -293,7 +324,7 @@ public class PhoneService extends WearableListenerService implements Runnable {
      * this will save waking time in preferences
      * Also gets user's location and assumes it as their home.
      */
-    public void setWakingTime() {
+    private void setWakingTime() {
         if (!isAnalysisPeriod) {
             return;
         }
@@ -332,12 +363,75 @@ public class PhoneService extends WearableListenerService implements Runnable {
         }
     }
 
+    /**
+     * Will record the time when the watch says the user is Exercising
+     */
+    private void setExercisingTime() {
+        LocalDateTime rightNow = LocalDateTime.now();
+        int hour = sharedPref.getInt(SPkeys.EXERCISE_TIME_HOUR, -1);
+        int minute = sharedPref.getInt(SPkeys.EXERCISE_TIME_MINUTE, -1);
+
+        // Exercise time
+        if (hour > 0 && minute > 0) {
+            hour = ((hour + rightNow.getHour()) / 2);
+            minute = ((hour + rightNow.getMinute()) / 2);
+        } else {
+            hour = rightNow.getHour();
+            minute = rightNow.getMinute();
+        }
+
+        //Exercise days
+        String days;
+        if(sharedPref.contains(SPkeys.EXERCISE_DAYS)) {
+            days = sharedPref.getString(SPkeys.EXERCISE_DAYS, "") + ";" + rightNow.getDayOfWeek().toString();
+        }
+        else
+        {
+            days = rightNow.getDayOfWeek().toString();
+        }
+
+        //Exercise Type
+        String type;
+        DataBaseManager dataBaseManager = new DataBaseManager(context);
+        hour = rightNow.getHour();
+        if(rightNow.getMinute()<20)
+        {
+            hour = rightNow.getHour()-1;
+        }
+
+        List<PredictionEntity> predictions = dataBaseManager.getAllPredictions(hour, rightNow.getDayOfMonth(), rightNow.getMonthValue(), rightNow.getYear());
+        int total, running;
+        total = running = 0;
+        for(PredictionEntity prediction : predictions)
+        {
+            total++;
+            if(prediction.activity.equalsIgnoreCase(UserActivities.JOGGING))
+            {
+                running++;
+            }
+        }
+        if(((double)running/total) > 0.8)
+        {
+            type = "running";
+        }
+        else
+        {
+            type = "gym";
+        }
+
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putInt(SPkeys.EXERCISE_TIME_HOUR, hour);
+        editor.putInt(SPkeys.EXERCISE_TIME_MINUTE, minute);
+        editor.putString(SPkeys.EXERCISE_DAYS,days);
+        editor.putString(SPkeys.EXERCISE_TYPE,type);
+        editor.apply();
+    }
 
     /**
      * Will determine the workplace location
      * by checking the location after 11am and before 3pm.
      */
-    public void determineWorkplaceLocation() {
+    private void determineWorkplaceLocation() {
         runnable = new Runnable() {
             public void run() {
                 if (!isAnalysisPeriod) {
@@ -361,7 +455,7 @@ public class PhoneService extends WearableListenerService implements Runnable {
                         editor.putString(SPkeys.WORK_LONGITUDE, String.valueOf(longitude));
                     }
 
-                    Toast.makeText(context, "ONE Hour", Toast.LENGTH_LONG).show();
+//                    Toast.makeText(context, "ONE Hour", Toast.LENGTH_LONG).show();
                     handler.postDelayed(this, 3600000); //Once per hour
 
                 } else {
@@ -377,7 +471,7 @@ public class PhoneService extends WearableListenerService implements Runnable {
     /**
      * Once the week of analyzing is over we need to start the {@link SuggestingImprovements} service
      */
-    public void checkEndOfAnalysisPeriod() {
+    private void checkEndOfAnalysisPeriod() {
         LocalDate today = LocalDate.now();
         LocalDate analysisStartDate = LocalDate.parse(LifestyleMainActivity.ANALYSIS_START_DATE);
 
@@ -388,7 +482,6 @@ public class PhoneService extends WearableListenerService implements Runnable {
 
         isAnalysisPeriod = true;
     }
-
 
     /**
      * Getting current location
@@ -412,6 +505,7 @@ public class PhoneService extends WearableListenerService implements Runnable {
         return currentLocation;
     }
 
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         isRunning = true;
@@ -426,5 +520,6 @@ public class PhoneService extends WearableListenerService implements Runnable {
         super.onDestroy();
         System.out.println("Wear OS destroy");
     }
+
 
 }

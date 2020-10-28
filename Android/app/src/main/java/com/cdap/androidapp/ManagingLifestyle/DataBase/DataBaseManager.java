@@ -43,6 +43,11 @@ public class DataBaseManager
         return db.predictionDao().loadPredictionsByDate(day, month, year);
     }
 
+    public List<PredictionEntity> getAllPredictions(int hour ,int day, int month, int year)
+    {
+        return db.predictionDao().loadPredictionsByDate(hour, day, month, year);
+    }
+
 
 
 

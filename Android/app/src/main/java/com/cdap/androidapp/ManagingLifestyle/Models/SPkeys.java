@@ -14,6 +14,8 @@ public class SPkeys {
 
     public static String EXERCISE_TIME_HOUR = "lifestyle_" + "exerciseTimeHour";
     public static String EXERCISE_TIME_MINUTE = "lifestyle_" + "exerciseTimeMinute";
+    public static String EXERCISE_DAYS = "lifestyle_" + "exerciseDays";
+    public static String EXERCISE_TYPE = "lifestyle_" + "exerciseType";
 
     public static String IS_ANALYZING_PERIOD = "lifestyle_" + "isAnalyzingPeriod";
     public static String ANALYSIS_START_DATE = "lifestyle_" + "analysisStartDate";

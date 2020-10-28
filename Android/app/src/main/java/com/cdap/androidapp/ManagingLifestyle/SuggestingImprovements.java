@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * By the time we start using this class we should have recorded the user's:
+ * By the time we start using this class we should have already recorded the user's:
  * sleep time
  * wake time
  * Home location

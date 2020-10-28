@@ -40,7 +40,7 @@ public class WatchService extends Service implements Runnable, SensorEventListen
     private StringBuilder text = new StringBuilder();
     public static float[] accelerometerReadings = {0, 0, 0};
     private ArrayList<SensorEvent> readings = new ArrayList<>();
-    private Object messageSendingLock = new Object();
+    private final Object messageSendingLock = new Object();
     private boolean chargingMessageSent = false;
     private int numberOfHeartRateReadings = 0;
     private SensorEventListener sensorEventListener;
@@ -87,7 +87,7 @@ public class WatchService extends Service implements Runnable, SensorEventListen
         thread.start();
 
 
-        return START_STICKY;
+        return Service.START_STICKY;
     }
 
 
@@ -209,7 +209,7 @@ public class WatchService extends Service implements Runnable, SensorEventListen
                 e.printStackTrace();
             }
 
-            if(lastHeartRateReading == null || lastHeartRateReading.plusMinutes(10).isAfter(LocalDateTime.now()))
+            if(lastHeartRateReading == null || LocalDateTime.now().isAfter(lastHeartRateReading.plusMinutes(10)))
             {
                 sensorManager.registerListener(sensorEventListener, heartRate, SensorManager.SENSOR_DELAY_NORMAL);
             }

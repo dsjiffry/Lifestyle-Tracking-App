@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -67,7 +66,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
             SharedPreferences.Editor editor = sharedPref.edit();
             editor.putBoolean(SPkeys.IS_ANALYZING_PERIOD, true);
             editor.putString(SPkeys.ANALYSIS_START_DATE, LocalDate.now().toString());
-            ANALYSIS_START_DATE =  LocalDate.now().toString();
+            ANALYSIS_START_DATE = LocalDate.now().toString();
             editor.apply();
         }
 
@@ -93,34 +92,24 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
             }
         }
 
-//        try {
-//            nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
-//        } catch (ExecutionException | InterruptedException e) {
-//            e.printStackTrace();
-//        }
-
         while (true) {
             try {
                 nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
-            } catch (ExecutionException | InterruptedException e) {
-                e.printStackTrace();
-            }
 
-            if (!PhoneService.isRunning && !nodes.isEmpty()) {
-                context.startService(intent);
-            }
+                if (!PhoneService.isRunning && !nodes.isEmpty()) {
+                    context.startService(intent);
+                }
 
-            if(nodes.isEmpty())
-            {
-                PhoneService.PREDICTION = "Watch not connected";
-                context.stopService(intent);
-            }
+                if (nodes.isEmpty()) {
+                    PhoneService.PREDICTION = "Watch not connected";
+                    context.stopService(intent);
+                }
 
-            setUITextFromThreads(textView, PhoneService.PREDICTION);
+                setUITextFromThreads(textView, PhoneService.PREDICTION);
 
-            try {
                 Thread.sleep(500);
-            } catch (InterruptedException e) {
+
+            } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
         }
@@ -135,8 +124,8 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
     /**
      * Threads cannot directly modify ui, those requests need to be run on the UI thread.
      *
-     * @param textView
-     * @param message
+     * @param textView to be modified
+     * @param message to be set in the TextView
      */
     public void setUITextFromThreads(final TextView textView, final String message) {
         runOnUiThread(new Runnable() {
@@ -187,7 +176,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
             InputStream response = httpURLConnection.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(response));
             StringBuilder stringBuilder = new StringBuilder();
-            String line = null;
+            String line;
             while ((line = reader.readLine()) != null) {
                 stringBuilder.append(line + "\n");
             }
@@ -197,11 +186,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
             }
 
 
-        } catch (MalformedURLException e) { //url = new URL(SERVER_URL);
-            e.printStackTrace();
-        } catch (IOException e) { // URLConnection conn = url.openConnection();
-            e.printStackTrace();
-        } catch (JSONException e) { // jsonObject.put(...);
+        } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
 
