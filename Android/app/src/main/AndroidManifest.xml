@@ -10,8 +10,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
-        android:theme="@style/AppTheme">
-        <activity android:name=".DailyRoutine.RoutineMainActivity"></activity>
+        android:theme="@style/Theme.AppCompat.NoActionBar"
+        >
+        <activity android:name=".DailyRoutine.RoutineMainActivity" />
         <activity android:name=".FoodReccomendation.FoodMainActivity" />
         <activity android:name=".GameDifficulty.GameMainActivity" />
         <activity android:name=".ManagingLifestyle.LifestyleMainActivity"  android:screenOrientation="portrait"/>
