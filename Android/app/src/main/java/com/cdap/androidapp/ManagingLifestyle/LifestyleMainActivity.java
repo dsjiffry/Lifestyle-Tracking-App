@@ -14,7 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import com.cdap.androidapp.MainActivity;
-import com.cdap.androidapp.ManagingLifestyle.Models.SPkeys;
+import com.cdap.androidapp.ManagingLifestyle.Models.Constants;
 import com.cdap.androidapp.R;
 import com.google.android.gms.common.util.ArrayUtils;
 import com.google.android.gms.tasks.Tasks;
@@ -79,7 +79,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
     }
 
     /**
-     * Will check if server is reachable, start the {@link PhoneService} and update UI
+     * Will check if server is reachable, start the {@link PhoneLifestyleService} and update UI
      */
     @Override
     public void run() {
@@ -87,15 +87,15 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         SharedPreferences sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
 
         //Will be taking one week to analyze user's current lifestyle
-        if (!sharedPref.contains(SPkeys.IS_ANALYZING_PERIOD) || !sharedPref.contains(SPkeys.ANALYSIS_START_DATE)) {
+        if (!sharedPref.contains(Constants.IS_ANALYZING_PERIOD) || !sharedPref.contains(Constants.ANALYSIS_START_DATE)) {
             SharedPreferences.Editor editor = sharedPref.edit();
-            editor.putBoolean(SPkeys.IS_ANALYZING_PERIOD, true);
-            editor.putString(SPkeys.ANALYSIS_START_DATE, LocalDate.now().toString());
+            editor.putBoolean(Constants.IS_ANALYZING_PERIOD, true);
+            editor.putString(Constants.ANALYSIS_START_DATE, LocalDate.now().toString());
             editor.apply();
         }
 
-        Intent phoneServiceIntent = new Intent(context, PhoneService.class);
-        Intent suggestingImprovementsIntent = new Intent(context, SuggestingImprovements.class);
+        Intent phoneServiceIntent = new Intent(context, PhoneLifestyleService.class);
+        Intent suggestingImprovementsIntent = new Intent(context, SuggestingLifestyleImprovements.class);
         List<Node> nodes = new ArrayList<>();
         while (!checkServerAvailability()) //Wait till server is available
         {
@@ -111,30 +111,28 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
             try {
                 nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
 
-                if (!PhoneService.isRunning && !nodes.isEmpty()) {
+                if (!PhoneLifestyleService.isRunning && !nodes.isEmpty()) {
                     context.startService(phoneServiceIntent);
                 }
 
                 if (nodes.isEmpty()) {
-                    PhoneService.PREDICTION = "Watch not connected";
+                    PhoneLifestyleService.PREDICTION = "Watch not connected";
                     context.stopService(phoneServiceIntent);
                 }
 
-                setUITextFromThreads(textView, PhoneService.PREDICTION);
-                Thread.sleep(500);
+                setUITextFromThreads(textView, PhoneLifestyleService.PREDICTION);
+                Thread.sleep(1000);
 
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
         }
 
-
-
         while (true) {
-            if (!PhoneService.isRunning && !nodes.isEmpty()) {
+            if (!PhoneLifestyleService.isRunning && !nodes.isEmpty()) {
                 context.startService(phoneServiceIntent);
             }
-            if (!SuggestingImprovements.isRunning && !nodes.isEmpty()) {
+            if (!SuggestingLifestyleImprovements.isRunning && !nodes.isEmpty()) {
                 context.startService(suggestingImprovementsIntent);
             }
 
@@ -228,7 +226,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
 
     private boolean isAnalysisPeriod() {
         LocalDate rightNow = LocalDate.now();
-        LocalDate analysisStartDate = LocalDate.parse(sharedPref.getString(SPkeys.ANALYSIS_START_DATE, ""));
+        LocalDate analysisStartDate = LocalDate.parse(sharedPref.getString(Constants.ANALYSIS_START_DATE, ""));
 
         if (rightNow.isAfter(analysisStartDate.plusWeeks(1))) {
             return false;

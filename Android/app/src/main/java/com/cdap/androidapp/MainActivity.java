@@ -86,8 +86,7 @@ public class MainActivity extends AppCompatActivity implements Runnable {
                 Thread.sleep(10000);
 
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        } catch (InterruptedException ignored) {
         }
     }
 }

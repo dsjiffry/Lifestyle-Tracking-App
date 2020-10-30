@@ -1,10 +1,11 @@
 package com.cdap.androidapp.ManagingLifestyle.Models;
 
 /**
- * Key Names for Shared Preference values
+ * Constant values used throughout the code
  */
-public class SPkeys {
+public class Constants {
 
+    /////////////////////////////////// Shared Preference Keys ///////////////////////////////////
     public static String WORK_LATITUDE = "lifestyle_" + "workLatitude";
     public static String WORK_LONGITUDE = "lifestyle_" + "workLongitude";
     public static String WORK_START_TIME_HOUR = "lifestyle_" + "workStartTimeHour";
@@ -29,5 +30,14 @@ public class SPkeys {
 
     public static String HOME_LATITUDE = "lifestyle_" + "HomeLatitude";
     public static String HOME_LONGITUDE = "lifestyle_" + "HomeLongitude";
+    //////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    /////////////////////////////////// notification IDs ///////////////////////////////////
+
+    public static int SITTING_TRACKER = 1;
+    public static int PHONE_SERVICE = 2;
+
+
 
 }

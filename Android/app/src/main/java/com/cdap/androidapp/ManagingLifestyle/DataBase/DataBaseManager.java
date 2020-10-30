@@ -48,6 +48,11 @@ public class DataBaseManager
         return db.predictionDao().loadPredictionsByDate(hour, day, month, year);
     }
 
+    public List<PredictionEntity> getLastFewPredictions(int numberOfPredictions)
+    {
+        return db.predictionDao().getLastFewPredictions(numberOfPredictions);
+    }
+
 
 
 

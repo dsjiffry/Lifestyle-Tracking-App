@@ -25,7 +25,7 @@ import com.cdap.androidapp.ManagingLifestyle.DataBase.DataBaseManager;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.PredictionEntity;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.UserActivities;
 import com.cdap.androidapp.ManagingLifestyle.Models.Reading;
-import com.cdap.androidapp.ManagingLifestyle.Models.SPkeys;
+import com.cdap.androidapp.ManagingLifestyle.Models.Constants;
 import com.cdap.androidapp.R;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.WearableListenerService;
@@ -60,7 +60,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * exercise time
  * method of transport to work
  */
-public class PhoneService extends WearableListenerService implements Runnable {
+public class PhoneLifestyleService extends WearableListenerService implements Runnable {
 
 
     public static volatile String PREDICTION = "predicting...";
@@ -88,38 +88,11 @@ public class PhoneService extends WearableListenerService implements Runnable {
     @Override
     public void onCreate() {
         super.onCreate();
-        isRunning = true;
         context = getApplicationContext();
         workLongitude = new ArrayList<>();
         workLatitude = new ArrayList<>();
 
-    }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        isRunning = true;
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "69")
-                .setContentTitle("Receiving sensor readings")
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setSmallIcon(R.drawable.common_full_open_on_phone)
-                .setOngoing(true);
-
-        NotificationChannel channel = new NotificationChannel("69", "Readings", NotificationManager.IMPORTANCE_DEFAULT);
-        channel.setDescription("getting sensor readings from watch");
-        NotificationManager notificationManager = getSystemService(NotificationManager.class);
-        notificationManager.createNotificationChannel(channel);
-        NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
-
-        // notificationId is a unique int for each notification that you must define
-        notificationManagerCompat.notify(69, builder.build());
-        final PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, PhoneService.class.getSimpleName());
-        wakeLock.acquire();
-
         sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
-
-
         intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
         broadcastReceiver = new BroadcastReceiver() {
@@ -133,6 +106,30 @@ public class PhoneService extends WearableListenerService implements Runnable {
                 }
             }
         };
+
+
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        isRunning = true;
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "phoneService")
+                .setContentTitle("Receiving sensor readings")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setSmallIcon(R.drawable.common_full_open_on_phone)
+                .setOngoing(true);
+
+        NotificationChannel channel = new NotificationChannel("phoneService", "lifestyle tracking", NotificationManager.IMPORTANCE_DEFAULT);
+        channel.setDescription("getting sensor readings from watch");
+        NotificationManager notificationManager = getSystemService(NotificationManager.class);
+        notificationManager.createNotificationChannel(channel);
+        NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
+
+        // notificationId is a unique int for each notification that you must define
+        notificationManagerCompat.notify(Constants.PHONE_SERVICE, builder.build());
+        final PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, PhoneLifestyleService.class.getSimpleName());
+        wakeLock.acquire();
 
         Thread thread = new Thread(this);
         thread.start();
@@ -292,7 +289,7 @@ public class PhoneService extends WearableListenerService implements Runnable {
                     );
                     dataBaseManager.addPrediction(predictionEntity);
                     if (previousPredictionEntity != null && previousPredictionEntity.day != predictionEntity.day) {
-                        PercentageManager.saveDailyPercentages(context, previousPredictionEntity);
+                        LifestylePercentageManager.saveDailyPercentages(context, previousPredictionEntity);
                     }
 
 
@@ -318,8 +315,8 @@ public class PhoneService extends WearableListenerService implements Runnable {
         if (rightNow.getHour() >= 20 && rightNow.getHour() <= 23 ||
                 rightNow.getHour() >= 0 && rightNow.getHour() <= 3) {
 
-            int hour = sharedPref.getInt(SPkeys.SLEEP_TIME_HOUR, -1);
-            int minute = sharedPref.getInt(SPkeys.SLEEP_TIME_MINUTE, -1);
+            int hour = sharedPref.getInt(Constants.SLEEP_TIME_HOUR, -1);
+            int minute = sharedPref.getInt(Constants.SLEEP_TIME_MINUTE, -1);
 
             if (hour > 0 && minute > 0) {
                 hour = ((hour + rightNow.getHour()) / 2);
@@ -330,8 +327,8 @@ public class PhoneService extends WearableListenerService implements Runnable {
             }
 
             SharedPreferences.Editor editor = sharedPref.edit();
-            editor.putInt(SPkeys.SLEEP_TIME_HOUR, hour);
-            editor.putInt(SPkeys.SLEEP_TIME_MINUTE, minute);
+            editor.putInt(Constants.SLEEP_TIME_HOUR, hour);
+            editor.putInt(Constants.SLEEP_TIME_MINUTE, minute);
             editor.apply();
         }
     }
@@ -350,8 +347,8 @@ public class PhoneService extends WearableListenerService implements Runnable {
         // Assuming people wake up sometime between 3am and 9am.
         if (rightNow.getHour() >= 3 && rightNow.getHour() <= 9) {
 
-            int hour = sharedPref.getInt(SPkeys.WAKE_TIME_HOUR, -1);
-            int minute = sharedPref.getInt(SPkeys.WAKE_TIME_MINUTE, -1);
+            int hour = sharedPref.getInt(Constants.WAKE_TIME_HOUR, -1);
+            int minute = sharedPref.getInt(Constants.WAKE_TIME_MINUTE, -1);
 
             if (hour > 0 && minute > 0) {
                 hour = ((hour + rightNow.getHour()) / 2);
@@ -365,12 +362,12 @@ public class PhoneService extends WearableListenerService implements Runnable {
 
 
             SharedPreferences.Editor editor = sharedPref.edit();
-            editor.putInt(SPkeys.WAKE_TIME_HOUR, hour);
-            editor.putInt(SPkeys.WAKE_TIME_MINUTE, minute);
+            editor.putInt(Constants.WAKE_TIME_HOUR, hour);
+            editor.putInt(Constants.WAKE_TIME_MINUTE, minute);
 
             if (currentLocation != null) {
-                editor.putString(SPkeys.HOME_LATITUDE, String.valueOf(currentLocation.getLatitude()));
-                editor.putString(SPkeys.HOME_LONGITUDE, String.valueOf(currentLocation.getLongitude()));
+                editor.putString(Constants.HOME_LATITUDE, String.valueOf(currentLocation.getLatitude()));
+                editor.putString(Constants.HOME_LONGITUDE, String.valueOf(currentLocation.getLongitude()));
             }
 
             editor.apply();
@@ -386,8 +383,8 @@ public class PhoneService extends WearableListenerService implements Runnable {
         }
 
         LocalDateTime rightNow = LocalDateTime.now();
-        int hour = sharedPref.getInt(SPkeys.EXERCISE_TIME_HOUR, -1);
-        int minute = sharedPref.getInt(SPkeys.EXERCISE_TIME_MINUTE, -1);
+        int hour = sharedPref.getInt(Constants.EXERCISE_TIME_HOUR, -1);
+        int minute = sharedPref.getInt(Constants.EXERCISE_TIME_MINUTE, -1);
 
         // Exercise time
         if (hour > 0 && minute > 0) {
@@ -400,8 +397,8 @@ public class PhoneService extends WearableListenerService implements Runnable {
 
         //Exercise days
         String days;
-        if (sharedPref.contains(SPkeys.EXERCISE_DAYS)) {
-            days = sharedPref.getString(SPkeys.EXERCISE_DAYS, "") + ";" + rightNow.getDayOfWeek().toString();
+        if (sharedPref.contains(Constants.EXERCISE_DAYS)) {
+            days = sharedPref.getString(Constants.EXERCISE_DAYS, "") + ";" + rightNow.getDayOfWeek().toString();
         } else {
             days = rightNow.getDayOfWeek().toString();
         }
@@ -430,10 +427,10 @@ public class PhoneService extends WearableListenerService implements Runnable {
         }
 
         SharedPreferences.Editor editor = sharedPref.edit();
-        editor.putInt(SPkeys.EXERCISE_TIME_HOUR, hour);
-        editor.putInt(SPkeys.EXERCISE_TIME_MINUTE, minute);
-        editor.putString(SPkeys.EXERCISE_DAYS, days);
-        editor.putString(SPkeys.EXERCISE_TYPE, type);
+        editor.putInt(Constants.EXERCISE_TIME_HOUR, hour);
+        editor.putInt(Constants.EXERCISE_TIME_MINUTE, minute);
+        editor.putString(Constants.EXERCISE_DAYS, days);
+        editor.putString(Constants.EXERCISE_TYPE, type);
         editor.apply();
     }
 
@@ -461,12 +458,14 @@ public class PhoneService extends WearableListenerService implements Runnable {
 //                        Toast.makeText(context, "ONE Hour", Toast.LENGTH_LONG).show();
 
                     } else {
-                        double latitude = Collections.max(workLatitude);
-                        double longitude = Collections.max(workLongitude);
-                        SharedPreferences.Editor editor = sharedPref.edit();
-                        editor.putString(SPkeys.WORK_LATITUDE, String.valueOf(latitude));
-                        editor.putString(SPkeys.WORK_LONGITUDE, String.valueOf(longitude));
-                        editor.apply();
+                        if (!workLatitude.isEmpty() && !workLongitude.isEmpty()) {
+                            double latitude = Collections.max(workLatitude);
+                            double longitude = Collections.max(workLongitude);
+                            SharedPreferences.Editor editor = sharedPref.edit();
+                            editor.putString(Constants.WORK_LATITUDE, String.valueOf(latitude));
+                            editor.putString(Constants.WORK_LONGITUDE, String.valueOf(longitude));
+                            editor.apply();
+                        }
                     }
 
 
@@ -489,21 +488,21 @@ public class PhoneService extends WearableListenerService implements Runnable {
         }
 
         //Detecting how user goes to work
-        if (!sharedPref.contains(SPkeys.WORK_TRAVEL_METHOD)) {
+        if (!sharedPref.contains(Constants.WORK_TRAVEL_METHOD)) {
             SharedPreferences.Editor editor = sharedPref.edit();
-            editor.putString(SPkeys.WORK_TRAVEL_METHOD, "walking");
+            editor.putString(Constants.WORK_TRAVEL_METHOD, "walking");
             editor.apply();
         }
 
-        int wakeHour = sharedPref.getInt(SPkeys.WAKE_TIME_HOUR, -1);
-        int atWorkHour = sharedPref.getInt(SPkeys.WORK_START_TIME_HOUR, -1);
+        int wakeHour = sharedPref.getInt(Constants.WAKE_TIME_HOUR, -1);
+        int atWorkHour = sharedPref.getInt(Constants.WORK_START_TIME_HOUR, -1);
         if (wakeHour >= 0 && atWorkHour >= 0) {
             LocalDateTime rightNow = LocalDateTime.now();
             if (rightNow.getHour() > wakeHour && rightNow.getHour() < atWorkHour) {
                 if (getCurrentLocation().getSpeed() > 3.0f) // 3 m/s = 10.8 km/h
                 {
                     SharedPreferences.Editor editor = sharedPref.edit();
-                    editor.putString(SPkeys.WORK_TRAVEL_METHOD, "vehicle");
+                    editor.putString(Constants.WORK_TRAVEL_METHOD, "vehicle");
                     editor.apply();
                 }
             }
@@ -522,12 +521,12 @@ public class PhoneService extends WearableListenerService implements Runnable {
                     return;
                 }
 
-                if (!sharedPref.contains(SPkeys.WORK_LATITUDE) && !sharedPref.contains(SPkeys.WORK_LONGITUDE)) { //Should not happen
+                if (!sharedPref.contains(Constants.WORK_LATITUDE) && !sharedPref.contains(Constants.WORK_LONGITUDE)) { //Should not happen
                     return;
                 }
 
-                double workLatitude = Double.parseDouble(sharedPref.getString(SPkeys.WORK_LATITUDE, ""));
-                double workLongitude = Double.parseDouble(sharedPref.getString(SPkeys.WORK_LONGITUDE, ""));
+                double workLatitude = Double.parseDouble(sharedPref.getString(Constants.WORK_LATITUDE, ""));
+                double workLongitude = Double.parseDouble(sharedPref.getString(Constants.WORK_LONGITUDE, ""));
                 Location currentLocation = getCurrentLocation();
                 LocalDateTime rightNow = LocalDateTime.now();
 
@@ -536,17 +535,17 @@ public class PhoneService extends WearableListenerService implements Runnable {
                     if (currentLocation.getLongitude() < workLongitude + 0.0005 && currentLocation.getLongitude() > workLongitude - 0.0005 &&
                             currentLocation.getLatitude() < workLatitude + 0.0005 && currentLocation.getLatitude() > workLatitude - 0.0005) {
                         SharedPreferences.Editor editor = sharedPref.edit();
-                        if (sharedPref.contains(SPkeys.WORK_START_TIME_HOUR) && sharedPref.contains(SPkeys.WORK_START_TIME_MINUTE)) {
-                            if (rightNow.getHour() < sharedPref.getInt(SPkeys.WORK_START_TIME_HOUR, 99)) {
+                        if (sharedPref.contains(Constants.WORK_START_TIME_HOUR) && sharedPref.contains(Constants.WORK_START_TIME_MINUTE)) {
+                            if (rightNow.getHour() < sharedPref.getInt(Constants.WORK_START_TIME_HOUR, 99)) {
 
-                                editor.putInt(SPkeys.WORK_START_TIME_HOUR, rightNow.getHour());
-                                if (rightNow.getMinute() < sharedPref.getInt(SPkeys.WORK_START_TIME_MINUTE, 99)) {
-                                    editor.putInt(SPkeys.WORK_START_TIME_MINUTE, rightNow.getMinute());
+                                editor.putInt(Constants.WORK_START_TIME_HOUR, rightNow.getHour());
+                                if (rightNow.getMinute() < sharedPref.getInt(Constants.WORK_START_TIME_MINUTE, 99)) {
+                                    editor.putInt(Constants.WORK_START_TIME_MINUTE, rightNow.getMinute());
                                 }
                             }
                         } else {
-                            editor.putInt(SPkeys.WORK_START_TIME_HOUR, rightNow.getHour());
-                            editor.putInt(SPkeys.WORK_START_TIME_MINUTE, rightNow.getMinute());
+                            editor.putInt(Constants.WORK_START_TIME_HOUR, rightNow.getHour());
+                            editor.putInt(Constants.WORK_START_TIME_MINUTE, rightNow.getMinute());
                         }
                         editor.apply();
                         isAtWork.set(true);
@@ -562,16 +561,16 @@ public class PhoneService extends WearableListenerService implements Runnable {
                     if (currentLocation.getLongitude() > workLongitude + 0.0005 && currentLocation.getLongitude() < workLongitude - 0.0005 &&
                             currentLocation.getLatitude() > workLatitude + 0.0005 && currentLocation.getLatitude() < workLatitude - 0.0005) {
                         SharedPreferences.Editor editor = sharedPref.edit();
-                        if (sharedPref.contains(SPkeys.WORK_END_TIME_HOUR) && sharedPref.contains(SPkeys.WORK_END_TIME_MINUTE)) {
-                            if (rightNow.getHour() > sharedPref.getInt(SPkeys.WORK_END_TIME_HOUR, 99)) {
-                                editor.putInt(SPkeys.WORK_END_TIME_HOUR, rightNow.getHour());
-                                if (rightNow.getMinute() > sharedPref.getInt(SPkeys.WORK_END_TIME_MINUTE, 99)) {
-                                    editor.putInt(SPkeys.WORK_END_TIME_MINUTE, rightNow.getMinute());
+                        if (sharedPref.contains(Constants.WORK_END_TIME_HOUR) && sharedPref.contains(Constants.WORK_END_TIME_MINUTE)) {
+                            if (rightNow.getHour() > sharedPref.getInt(Constants.WORK_END_TIME_HOUR, 99)) {
+                                editor.putInt(Constants.WORK_END_TIME_HOUR, rightNow.getHour());
+                                if (rightNow.getMinute() > sharedPref.getInt(Constants.WORK_END_TIME_MINUTE, 99)) {
+                                    editor.putInt(Constants.WORK_END_TIME_MINUTE, rightNow.getMinute());
                                 }
                             }
                         } else {
-                            editor.putInt(SPkeys.WORK_END_TIME_HOUR, rightNow.getHour());
-                            editor.putInt(SPkeys.WORK_END_TIME_MINUTE, rightNow.getMinute());
+                            editor.putInt(Constants.WORK_END_TIME_HOUR, rightNow.getHour());
+                            editor.putInt(Constants.WORK_END_TIME_MINUTE, rightNow.getMinute());
                         }
                         editor.apply();
                         isAtWork.set(false);
@@ -587,11 +586,11 @@ public class PhoneService extends WearableListenerService implements Runnable {
     }
 
     /**
-     * Once the week of analyzing is over we need to start the {@link SuggestingImprovements} service
+     * Once the week of analyzing is over we need to start the {@link SuggestingLifestyleImprovements} service
      */
     private void checkEndOfAnalysisPeriod() {
         LocalDate rightNow = LocalDate.now();
-        LocalDate analysisStartDate = LocalDate.parse(sharedPref.getString(SPkeys.ANALYSIS_START_DATE, ""));
+        LocalDate analysisStartDate = LocalDate.parse(sharedPref.getString(Constants.ANALYSIS_START_DATE, ""));
 
         if (rightNow.isAfter(analysisStartDate.plusWeeks(1))) {
             isAnalysisPeriod = false;
