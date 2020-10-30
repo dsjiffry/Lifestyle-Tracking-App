@@ -84,7 +84,6 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
     private final Object makePredictionLock = new Object();
 
-    @SuppressLint("WakelockTimeout")
     @Override
     public void onCreate() {
         super.onCreate();
@@ -110,6 +109,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
     }
 
+    @SuppressLint("WakelockTimeout")
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         isRunning = true;

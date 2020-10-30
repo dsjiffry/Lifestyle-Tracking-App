@@ -1,14 +1,15 @@
 package com.cdap.wear_ap.ManagingLifestyle;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.BatteryManager;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.support.wearable.activity.WearableActivity;
-import android.view.WindowManager;
 import android.widget.TextView;
 
 import androidx.core.app.ActivityCompat;
@@ -22,6 +23,7 @@ public class LifestyleMainActivity extends WearableActivity {
     private TextView mTextView;
     private Context context;
     private final Object displayLock = new Object();
+    private PowerManager.WakeLock wakeLock;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +39,8 @@ public class LifestyleMainActivity extends WearableActivity {
 
         final Intent intent = new Intent(this, WatchService.class);
         startService(intent);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+//        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setAmbientEnabled();
 
 
@@ -58,6 +61,7 @@ public class LifestyleMainActivity extends WearableActivity {
                     runOnUiThread(new Runnable() {
                         public void run() {
                             mTextView.setText(
+                                    "\n\n"+
                                     "x-axis: " + accelerometerReadings[0] + "\n" +
                                             "y-axis: " + accelerometerReadings[1] + "\n" +
                                             "z-axis: " + accelerometerReadings[2] + "\n\n" +
@@ -76,11 +80,16 @@ public class LifestyleMainActivity extends WearableActivity {
 
     }
 
+    @SuppressLint("WakelockTimeout")
     @Override
     public void onEnterAmbient(Bundle ambientDetails) {
         super.onEnterAmbient(ambientDetails);
         mTextView.setTextColor(Color.GRAY);
         mTextView.getPaint().setAntiAlias(false);
+        PowerManager powerMgr = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wakeLock = powerMgr.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, LifestyleMainActivity.class.getSimpleName());
+        wakeLock.acquire();
+
         onUpdateAmbient();
     }
 
@@ -89,24 +98,37 @@ public class LifestyleMainActivity extends WearableActivity {
         super.onExitAmbient();
         mTextView.setTextColor(Color.WHITE);
         mTextView.getPaint().setAntiAlias(true);
+        if (wakeLock.isHeld()) {
+            wakeLock.release();
+        }
         synchronized (displayLock) {
             displayLock.notifyAll();
         }
     }
 
+    /**
+     * Called once per minute when in ambient mode
+     */
     @Override
     public void onUpdateAmbient() {
         super.onUpdateAmbient();
         final Intent batteryStatus = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         LocalDateTime rightNow = LocalDateTime.now();
-        mTextView.setText(
-                rightNow.getHour() + ":" + rightNow.getMinute() + "\n" +
-                        "Always-on mode" + "\n\n" +
-                        "Battery Level " + batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) + "%"
-        );
+        StringBuilder message = new StringBuilder();
+        message.append("\n\n");// Fixing spacing
+
+
+        if (rightNow.getMinute() % 2 == 0) //Preventing amoled burn in
+        {
+            message.append("\n\n\n");
+        }
+
+        message.append(rightNow.getHour()).append(":").append(rightNow.getMinute()).append("\n").append("Always-on mode").append("\n").append("Battery Level ").append(batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)).append("%");
+
+        mTextView.setText(message.toString());
+
+
     }
-
-
 
 
 }
