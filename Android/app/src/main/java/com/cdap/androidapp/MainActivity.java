@@ -66,6 +66,12 @@ public class MainActivity extends AppCompatActivity implements Runnable {
         fadeIn.reset();
         fadeOut.reset();
 
+//        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), resourceID);
+//        bitmap = Bitmap.createScaledBitmap(bitmap, 1, 1, true);
+//        final int color = bitmap.getPixel(0, 0); // Most Dominant Color of Background Image
+//        bitmap.recycle();
+
+
         background.startAnimation(fadeOut);
         try {
             Thread.sleep(1900);

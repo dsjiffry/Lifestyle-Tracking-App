@@ -115,12 +115,12 @@ public class LifestyleMainActivity extends WearableActivity {
         final Intent batteryStatus = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         LocalDateTime rightNow = LocalDateTime.now();
         StringBuilder message = new StringBuilder();
-        message.append("\n\n");// Fixing spacing
+        message.append("\n");// Fixing spacing
 
 
         if (rightNow.getMinute() % 2 == 0) //Preventing amoled burn in
         {
-            message.append("\n\n\n");
+            message.append("\n\n\n\n");
         }
 
         message.append(rightNow.getHour()).append(":").append(rightNow.getMinute()).append("\n").append("Always-on mode").append("\n").append("Battery Level ").append(batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)).append("%");

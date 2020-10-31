@@ -99,8 +99,8 @@ public class WatchService extends Service implements Runnable, SensorEventListen
     private void onNewAccelerometerValue(SensorEvent sensorEvent) {
 
         Intent batteryStatus = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-        // Are we charging / charged?
-        int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+
+        int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);// Are we charging or fully charged
         boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
                 status == BatteryManager.BATTERY_STATUS_FULL;
 

@@ -9,6 +9,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,7 +45,8 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
 
     private Context context;
     public final static String SERVER_URL = "http://192.168.8.140:8000/life";
-    public TextView textView;
+    public TextView card1Subtext;
+    public ImageView card1Icon;
     private SharedPreferences sharedPref;
     private URL url = null;
 
@@ -62,8 +64,10 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         getWindow().setStatusBarColor(Color.parseColor("#42000000"));
         getWindow().setNavigationBarColor(Color.parseColor("#42000000"));
 
+        setContentView(R.layout.activity_lifestyle_main);
         context = getApplicationContext();
-        textView = findViewById(R.id.mainText);
+        card1Subtext = findViewById(R.id.card1_subtext);
+        card1Icon = findViewById(R.id.card1_icon);
         sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
 
 
@@ -112,7 +116,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         List<Node> nodes = new ArrayList<>();
         while (!checkServerAvailability()) //Wait till server is available
         {
-            setUITextFromThreads(textView, "Server Unavailable");
+            setUITextFromThreads(card1Subtext, "Server Unavailable");
             try {
                 Thread.sleep(10000);
             } catch (InterruptedException e) {
@@ -133,7 +137,8 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                     context.stopService(phoneServiceIntent);
                 }
 
-                setUITextFromThreads(textView, PhoneLifestyleService.PREDICTION);
+                setUITextFromThreads(card1Subtext, PhoneLifestyleService.PREDICTION);
+                setIconFromThreads(card1Icon);
                 Thread.sleep(1000);
 
             } catch (InterruptedException | ExecutionException e) {
@@ -177,7 +182,44 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
      * @param message  to be set in the TextView
      */
     public void setUITextFromThreads(final TextView textView, final String message) {
-        runOnUiThread(() -> textView.setText(message));
+        runOnUiThread(() ->
+                textView.setText(message)
+        );
+    }
+
+    /**
+     * Threads cannot directly modify ui, those requests need to be run on the UI thread.
+     *
+     * @param imageView to be modified
+     */
+    public void setIconFromThreads(final ImageView imageView) {
+
+        final int drawableID;
+        switch (PhoneLifestyleService.PREDICTION.toLowerCase())
+        {
+            case Constants.STANDING:
+                drawableID = R.drawable.ic_standing_icon;
+                break;
+            case Constants.SITTING:
+                drawableID = R.drawable.ic_sitting_icon;
+                break;
+            case Constants.WALKING:
+                drawableID = R.drawable.ic_walking_icon;
+                break;
+            case Constants.JOGGING:
+                drawableID = R.drawable.ic_jogging_icon;
+                break;
+            case Constants.STAIRS:
+                drawableID = R.drawable.ic_stairs_icon;
+                break;
+            default:
+                drawableID = R.drawable.logo;
+                break;
+        }
+
+        runOnUiThread(() ->
+                imageView.setImageResource(drawableID)
+        );
     }
 
     /**

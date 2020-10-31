@@ -99,7 +99,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
                     .setContentTitle("You've been sitting for a long time")
                     .setContentText("We recommend moving about for a bit")
                     .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                    .setSmallIcon(R.drawable.sitting_icon)
+                    .setSmallIcon(R.drawable.long_sitting_icon)
                     .setOngoing(false);
 
             NotificationChannel channel = new NotificationChannel("sittingForTooLong", "sitting tracker", NotificationManager.IMPORTANCE_DEFAULT);
