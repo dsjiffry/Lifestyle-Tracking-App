@@ -39,6 +39,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.DayOfWeek;
@@ -67,6 +68,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     public static Boolean isRunning = false;    //Used to check if service is already running
     public static Boolean isAnalysisPeriod = true;    //Used to check if we are still in analysis week
     public final static String SERVER_URL = "http://192.168.8.140:8000/life";
+    public static boolean IS_SERVER_REACHABLE = false;
 
     private final ArrayList<Reading> values = new ArrayList<>();    // Stores 200 accelerometer readings
     private Context context;
@@ -113,6 +115,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         isRunning = true;
+        IS_SERVER_REACHABLE = true;
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "phoneService")
                 .setContentTitle("Receiving sensor readings")
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -260,6 +263,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                     httpURLConnection.setDoOutput(true);
                     httpURLConnection.setRequestMethod("POST");
                     httpURLConnection.setRequestProperty("Content-Type", "application/json");
+                    httpURLConnection.setReadTimeout(3000);
                     httpURLConnection.connect();
 
                     DataOutputStream wr = new DataOutputStream(httpURLConnection.getOutputStream());
@@ -294,6 +298,8 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
 
                     previousPredictionEntity = predictionEntity;
+                } catch (ConnectException e) {
+                    IS_SERVER_REACHABLE = false;
                 } catch (IOException | JSONException e) {
                     e.printStackTrace();
                 }
@@ -632,6 +638,8 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
         super.onDestroy();
         System.out.println("Wear OS destroy");
     }
+
+
 
 
 }

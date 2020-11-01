@@ -114,58 +114,62 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         Intent phoneServiceIntent = new Intent(context, PhoneLifestyleService.class);
         Intent suggestingImprovementsIntent = new Intent(context, SuggestingLifestyleImprovements.class);
         List<Node> nodes = new ArrayList<>();
-        while (!checkServerAvailability()) //Wait till server is available
-        {
-            setUITextFromThreads(card1Subtext, "Server Unavailable");
-            try {
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        PhoneLifestyleService.IS_SERVER_REACHABLE = isServerAvailable();
 
-        while (isAnalysisPeriod()) {
-            try {
-                nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
 
-                if (!PhoneLifestyleService.isRunning && !nodes.isEmpty()) {
-                    context.startService(phoneServiceIntent);
-                }
+        try {
+            while (true) {
 
-                if (nodes.isEmpty()) {
-                    PhoneLifestyleService.PREDICTION = "Watch not connected";
+                if(!PhoneLifestyleService.IS_SERVER_REACHABLE) // Server becomes unreachable
+                {
                     context.stopService(phoneServiceIntent);
+                    setUITextFromThreads(card1Subtext, "Server Unavailable");
+                    while (!isServerAvailable()) //Wait till server is available
+                    {
+                            Thread.sleep(10000);
+                    }
+                    PhoneLifestyleService.IS_SERVER_REACHABLE = true;
+                    context.startService(phoneServiceIntent);
+                    setUITextFromThreads(card1Subtext, "predicting...");
                 }
 
-                setUITextFromThreads(card1Subtext, PhoneLifestyleService.PREDICTION);
-                setIconFromThreads(card1Icon);
+                if(isAnalysisPeriod()) {
+                    nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
+
+                    if (!PhoneLifestyleService.isRunning && !nodes.isEmpty()) {
+                        context.startService(phoneServiceIntent);
+                    }
+
+                    if (nodes.isEmpty()) {
+                        PhoneLifestyleService.PREDICTION = "Watch not connected";
+                        context.stopService(phoneServiceIntent);
+                    }
+
+                    setUITextFromThreads(card1Subtext, PhoneLifestyleService.PREDICTION);
+                    setIconFromThreads(card1Icon);
+
+                }
+                else {
+
+                    if (!PhoneLifestyleService.isRunning && !nodes.isEmpty()) {
+                        context.startService(phoneServiceIntent);
+                    }
+                    if (!SuggestingLifestyleImprovements.isRunning && !nodes.isEmpty()) {
+                        context.startService(suggestingImprovementsIntent);
+                    }
+                    if (nodes.isEmpty()) {
+                        context.stopService(phoneServiceIntent);
+                        context.stopService(suggestingImprovementsIntent);
+                    }
+
+                }
+
+
+
                 Thread.sleep(1000);
-
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
             }
-        }
-
-        while (true) {
-            if (!PhoneLifestyleService.isRunning && !nodes.isEmpty()) {
-                context.startService(phoneServiceIntent);
-            }
-            if (!SuggestingLifestyleImprovements.isRunning && !nodes.isEmpty()) {
-                context.startService(suggestingImprovementsIntent);
-            }
-
-            if(nodes.isEmpty())
-            {
-                context.stopService(phoneServiceIntent);
-                context.stopService(suggestingImprovementsIntent);
-            }
-
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
         }
 
     }
@@ -195,8 +199,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
     public void setIconFromThreads(final ImageView imageView) {
 
         final int drawableID;
-        switch (PhoneLifestyleService.PREDICTION.toLowerCase())
-        {
+        switch (PhoneLifestyleService.PREDICTION.toLowerCase()) {
             case Constants.STANDING:
                 drawableID = R.drawable.ic_standing_icon;
                 break;
@@ -225,7 +228,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
     /**
      * @return true if server is reachable
      */
-    public boolean checkServerAvailability() {
+    public boolean isServerAvailable() {
         try {
             if (url == null) {
                 url = new URL(SERVER_URL);
@@ -251,6 +254,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
             httpURLConnection.setDoOutput(true);
             httpURLConnection.setRequestMethod("POST");
             httpURLConnection.setRequestProperty("Content-Type", "application/json");
+            httpURLConnection.setConnectTimeout(1000);
             httpURLConnection.connect();
 
             DataOutputStream wr = new DataOutputStream(httpURLConnection.getOutputStream());
@@ -283,10 +287,6 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         LocalDate rightNow = LocalDate.now();
         LocalDate analysisStartDate = LocalDate.parse(sharedPref.getString(Constants.ANALYSIS_START_DATE, ""));
 
-        if (rightNow.isAfter(analysisStartDate.plusWeeks(1))) {
-            return false;
-        }
-
-        return true;
+        return !rightNow.isAfter(analysisStartDate.plusWeeks(1));
     }
 }
