@@ -59,6 +59,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * workplace location
  * work hours
  * exercise time
+ * exercise type
  * method of transport to work
  */
 public class PhoneLifestyleService extends WearableListenerService implements Runnable {
@@ -427,9 +428,9 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
             }
         }
         if (((double) running / total) > 0.8) {
-            type = "running";
+            type = Constants.RUNNING;
         } else {
-            type = "gym";
+            type = Constants.GYM;
         }
 
         SharedPreferences.Editor editor = sharedPref.edit();
@@ -496,7 +497,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
         //Detecting how user goes to work
         if (!sharedPref.contains(Constants.WORK_TRAVEL_METHOD)) {
             SharedPreferences.Editor editor = sharedPref.edit();
-            editor.putString(Constants.WORK_TRAVEL_METHOD, "walking");
+            editor.putString(Constants.WORK_TRAVEL_METHOD, Constants.WALKING);
             editor.apply();
         }
 
@@ -508,7 +509,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                 if (getCurrentLocation().getSpeed() > 3.0f) // 3 m/s = 10.8 km/h
                 {
                     SharedPreferences.Editor editor = sharedPref.edit();
-                    editor.putString(Constants.WORK_TRAVEL_METHOD, "vehicle");
+                    editor.putString(Constants.WORK_TRAVEL_METHOD, Constants.VEHICLE);
                     editor.apply();
                 }
             }

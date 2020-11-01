@@ -47,4 +47,14 @@ public class Constants {
     public static final String STAIRS = "stairs";
     public static final String JOGGING = "jogging";
 
+    /////////////////////////////////// exercise types ///////////////////////////////////
+
+    public static final String RUNNING = "running";
+    public static final String GYM = "gym";
+
+    /////////////////////////////////// work travel methods ///////////////////////////////////
+
+//    public static final String WALKING = "walking";
+    public static final String VEHICLE = "vehicle";
+
 }
