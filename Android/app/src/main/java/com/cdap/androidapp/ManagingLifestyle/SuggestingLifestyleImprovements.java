@@ -1,19 +1,17 @@
 package com.cdap.androidapp.ManagingLifestyle;
 
-import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.location.Location;
-import android.location.LocationManager;
+import android.content.SharedPreferences;
 import android.os.IBinder;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
 
+import com.cdap.androidapp.MainActivity;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.DataBaseManager;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.PredictionEntity;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.UserActivities;
@@ -31,7 +29,9 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
 
     public static Boolean isRunning = false;    //Used to check if service is already running
     private Context context;
+    private SharedPreferences sharedPref;
     private DataBaseManager dataBaseManager;
+    private double hoursOfSleep = -1;
 
 
     @Override
@@ -39,7 +39,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
         super.onCreate();
         context = getApplicationContext();
         dataBaseManager = new DataBaseManager(context);
-
+        sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
     }
 
     @Override
@@ -55,16 +55,17 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
 
     @Override
     public void run() {
-        while (true) {
-            checkTimeSeated();
+        try {
+            while (true) {
+                checkTimeSeated();
+                checkSleepHours();
+
+                Thread.sleep(3600000); //one hour
 
 
-            try {
-                Thread.sleep(3600000 ); //one hour
-            } catch (InterruptedException e) {
-                e.printStackTrace();
             }
-
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
@@ -95,47 +96,47 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
         double percentage = ((double) sitting / total);
         if (percentage > 0.85) //sitting for more than 85% of the time
         {
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "sittingForTooLong")
-                    .setContentTitle("You've been sitting for a long time")
-                    .setContentText("We recommend moving about for a bit")
-                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                    .setSmallIcon(R.drawable.long_sitting_icon)
-                    .setOngoing(false);
-
-            NotificationChannel channel = new NotificationChannel("sittingForTooLong", "sitting tracker", NotificationManager.IMPORTANCE_DEFAULT);
-            channel.setDescription("notify when user is sitting for long periods of time.");
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-            NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
-
-            // notificationId is a unique int for each notification that you must define
-            notificationManagerCompat.notify(Constants.SITTING_TRACKER, builder.build());
-
+            sendANotification("You've been sitting for a long time",
+                    "We recommend moving about for a bit",
+                    R.drawable.long_sitting_icon,
+                    Constants.SITTING_TOO_LONG);
         }
 
     }
 
 
     /**
-     * Getting current location
-     *
-     * @return current location
+     * The recommended amount of sleep for a healthy adult is at least seven hours
+     * <p>
+     * https://www.mayoclinic.org/healthy-lifestyle/adult-health/in-depth/sleep/art-20048379?mc_id=us&utm_source=newsnetwork&utm_medium=l&utm_content=content&utm_campaign=mayoclinic&geo=national&placementsite=enterprise&cauid=100721
      */
-    @SuppressLint("MissingPermission") //Handled at start of LifestyleMainActivity
-    private Location getCurrentLocation() {
-        Location currentLocation = null;
-        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        List<String> providers = locationManager.getProviders(true);
-        for (String provider : providers) {
-            Location location = locationManager.getLastKnownLocation(provider);
-            if (location == null) {
-                continue;
+    public void checkSleepHours() {
+        if (sharedPref.contains(Constants.SLEEP_TIME_HOUR) && sharedPref.contains(Constants.SLEEP_TIME_MINUTE)
+                && sharedPref.contains(Constants.WAKE_TIME_HOUR) && sharedPref.contains(Constants.WAKE_TIME_MINUTE)) {
+            double sleepHour = sharedPref.getInt(Constants.SLEEP_TIME_HOUR, -1);
+            int sleepMinute = sharedPref.getInt(Constants.SLEEP_TIME_MINUTE, -1);
+            double wakeHour = sharedPref.getInt(Constants.WAKE_TIME_HOUR, -1);
+            int wakeMinute = sharedPref.getInt(Constants.WAKE_TIME_MINUTE, -1);
+
+            sleepHour += ((double) sleepMinute / 60);
+            wakeHour += ((double) wakeMinute / 60);
+
+            double sleepingHours = -1;
+            if (sleepHour > wakeHour) {
+                sleepingHours = 24 - (sleepHour - wakeHour);
+            } else {
+                sleepingHours = wakeHour - sleepHour;
             }
-            if (currentLocation == null || location.getAccuracy() < currentLocation.getAccuracy()) { //Going for option with most accuracy
-                currentLocation = location;
+            if (sleepingHours <= 7.0) {
+                if (hoursOfSleep == -1) {
+                    sendANotification("You aren't getting enough sleep",
+                            "An adult requires at least 7 hours of sleep. You get only " + hoursOfSleep,
+                            R.drawable.ic_not_enough_sleep,
+                            Constants.NOT_ENOUGH_SLEEP);
+                }
+                hoursOfSleep = sleepingHours;
             }
         }
-        return currentLocation;
     }
 
 
@@ -145,5 +146,21 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
         return null;
     }
 
+    public void sendANotification(String contentTitle, String contentText, int drawableIcon, int notificationId) {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "SuggestingLifestyleImprovements")
+                .setContentTitle(contentTitle)
+                .setContentText(contentText)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setSmallIcon(drawableIcon)
+                .setOngoing(false);
+
+        NotificationChannel channel = new NotificationChannel("SuggestingLifestyleImprovements", "improving Lifestyle", NotificationManager.IMPORTANCE_DEFAULT);
+        channel.setDescription("notifies the user of changes they can make to their current lifestyle");
+        NotificationManager notificationManager = getSystemService(NotificationManager.class);
+        notificationManager.createNotificationChannel(channel);
+        
+        // notificationId is a unique int for each notification that you must define
+        notificationManager.notify(notificationId, builder.build());
+    }
 
 }

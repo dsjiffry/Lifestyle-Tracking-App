@@ -35,8 +35,9 @@ public class Constants {
 
     /////////////////////////////////// notification IDs ///////////////////////////////////
 
-    public static final int SITTING_TRACKER = 1;
+    public static final int SITTING_TOO_LONG = 1;
     public static final int PHONE_SERVICE = 2;
+    public static final int NOT_ENOUGH_SLEEP = 3;
 
 
     /////////////////////////////////// Predictions ///////////////////////////////////

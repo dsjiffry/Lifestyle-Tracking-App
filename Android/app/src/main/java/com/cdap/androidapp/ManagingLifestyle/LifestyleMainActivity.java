@@ -142,6 +142,8 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         List<Node> nodes = new ArrayList<>();
         PhoneLifestyleService.IS_SERVER_REACHABLE = isServerAvailable();
 
+//        context.startService(suggestingImprovementsIntent);
+
 
         try {
             while (true) {
@@ -331,6 +333,9 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                 break;
             case "watch is charging":
                 prediction_resID = R.drawable.ic_watch_charging;
+                break;
+            case "server unavailable":
+                prediction_resID = R.drawable.ic_server_unavailable;
                 break;
             default:
                 prediction_resID = R.drawable.logo;
