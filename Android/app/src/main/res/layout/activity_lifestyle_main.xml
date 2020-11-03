@@ -104,7 +104,7 @@
                     app:layout_constraintBottom_toBottomOf="@+id/card_current_activity_main_text"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="@+id/card_current_activity_main_text"
-                    app:srcCompat="@drawable/logo" />
+                    app:srcCompat="@drawable/ic_predicting" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 

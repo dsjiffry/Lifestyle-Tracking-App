@@ -148,10 +148,17 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         try {
             while (true) {
 
+                if (!PhoneLifestyleService.isRunning) {
+                    PhoneLifestyleService.IS_SERVER_REACHABLE = isServerAvailable();
+                }
+
                 if (!PhoneLifestyleService.IS_SERVER_REACHABLE) // Server becomes unreachable
                 {
                     context.stopService(phoneServiceIntent);
                     setUITextFromThreads(card_current_activity_subtext, "Server Unavailable");
+                    runOnUiThread(() ->
+                            card_current_activity_icon.setImageResource(R.drawable.ic_server_unavailable)
+                    );
                     while (!isServerAvailable()) //Wait till server is available
                     {
                         Thread.sleep(10000);
@@ -223,6 +230,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
 
             setUITextFromThreads(card_current_activity_subtext, PhoneLifestyleService.PREDICTION);
 
+            // Home Location
             if (sharedPref.contains(Constants.HOME_LATITUDE) && sharedPref.contains(Constants.HOME_LONGITUDE)) {
                 double latitude = Double.parseDouble(sharedPref.getString(Constants.HOME_LATITUDE, ""));
                 double longitude = Double.parseDouble(sharedPref.getString(Constants.HOME_LONGITUDE, ""));
@@ -231,6 +239,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                 setUITextFromThreads(card_home_location_subtext, address);
             }
 
+            // Work Location
             if (sharedPref.contains(Constants.WORK_LATITUDE) && sharedPref.contains(Constants.WORK_LONGITUDE)) {
                 double latitude = Double.parseDouble(sharedPref.getString(Constants.WORK_LATITUDE, ""));
                 double longitude = Double.parseDouble(sharedPref.getString(Constants.WORK_LONGITUDE, ""));
@@ -239,6 +248,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                 setUITextFromThreads(card_work_location_subtext, address);
             }
 
+            // Wake up Time
             if (sharedPref.contains(Constants.WAKE_TIME_HOUR) && sharedPref.contains(Constants.WAKE_TIME_MINUTE)) {
                 int hour = sharedPref.getInt(Constants.WAKE_TIME_HOUR, -1);
                 int minute = sharedPref.getInt(Constants.WAKE_TIME_MINUTE, -1);
@@ -249,12 +259,16 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                         hour = hour - 12;
                     }
                 }
-                String time = hour + ":" + minute + prefix;
+                String time = hour + ":" + minute + " " + prefix;
                 setUITextFromThreads(card_wake_time_subtext, time);
             }
-            if (sharedPref.contains(Constants.SLEEP_TIME_HOUR) && sharedPref.contains(Constants.SLEEP_TIME_HOUR)) {
-                int hour = sharedPref.getInt(Constants.SLEEP_TIME_HOUR, -1);
-                int minute = sharedPref.getInt(Constants.SLEEP_TIME_MINUTE, -1);
+
+            // Work Hours
+            if (sharedPref.contains(Constants.WORK_START_TIME_HOUR) && sharedPref.contains(Constants.WORK_START_TIME_MINUTE)
+                    && sharedPref.contains(Constants.WORK_END_TIME_HOUR) && sharedPref.contains(Constants.WORK_END_TIME_MINUTE)) {
+                StringBuilder workHours = new StringBuilder();
+                int hour = sharedPref.getInt(Constants.WORK_START_TIME_HOUR, -1);
+                int minute = sharedPref.getInt(Constants.WORK_START_TIME_MINUTE, -1);
                 String prefix = "am";
                 if (hour >= 12) {
                     prefix = "pm";
@@ -262,13 +276,29 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                         hour = hour - 12;
                     }
                 }
-                String time = hour + ":" + minute + prefix;
-                setUITextFromThreads(card_sleep_time_subtext, time);
+                workHours.append("From" + hour + ":" + minute + " " + prefix + " to ");
+
+                hour = sharedPref.getInt(Constants.WORK_END_TIME_HOUR, -1);
+                minute = sharedPref.getInt(Constants.WORK_END_TIME_MINUTE, -1);
+                prefix = "am";
+                if (hour >= 12) {
+                    prefix = "pm";
+                    if (hour > 12) {
+                        hour = hour - 12;
+                    }
+                }
+                workHours.append(hour + ":" + minute + " " + prefix);
+                setUITextFromThreads(card_work_hours_subtext, workHours.toString());
             }
+
+
+            //Travel to work by
             if (sharedPref.contains(Constants.WORK_TRAVEL_METHOD)) {
                 String method = sharedPref.getString(Constants.WORK_TRAVEL_METHOD, "");
                 setUITextFromThreads(card_work_travel_subtext, method);
             }
+
+            //Exercise Time
             if (sharedPref.contains(Constants.EXERCISE_TIME_HOUR) && sharedPref.contains(Constants.EXERCISE_TIME_MINUTE)) {
                 int hour = sharedPref.getInt(Constants.EXERCISE_TIME_HOUR, -1);
                 int minute = sharedPref.getInt(Constants.EXERCISE_TIME_MINUTE, -1);
@@ -279,13 +309,17 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                         hour = hour - 12;
                     }
                 }
-                String time = hour + ":" + minute + prefix;
+                String time = hour + ":" + minute + " " + prefix;
                 setUITextFromThreads(card_exercise_time_subtext, time);
             }
+
+            // Exercise Type
             if (sharedPref.contains(Constants.EXERCISE_TYPE)) {
                 String method = sharedPref.getString(Constants.EXERCISE_TYPE, "");
                 setUITextFromThreads(card_exercise_type_subtext, method);
             }
+
+            // Sleep Time
             if (sharedPref.contains(Constants.SLEEP_TIME_HOUR) && sharedPref.contains(Constants.SLEEP_TIME_MINUTE)) {
                 int hour = sharedPref.getInt(Constants.SLEEP_TIME_HOUR, -1);
                 int minute = sharedPref.getInt(Constants.SLEEP_TIME_MINUTE, -1);
@@ -296,7 +330,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                         hour = hour - 12;
                     }
                 }
-                String time = hour + ":" + minute + prefix;
+                String time = hour + ":" + minute + " " + prefix;
                 setUITextFromThreads(card_sleep_time_subtext, time);
             }
 
@@ -334,18 +368,17 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
             case "watch is charging":
                 prediction_resID = R.drawable.ic_watch_charging;
                 break;
-            case "server unavailable":
-                prediction_resID = R.drawable.ic_server_unavailable;
-                break;
+//            case "server unavailable":
+//                prediction_resID = R.drawable.ic_server_unavailable;
+//                break;
             default:
-                prediction_resID = R.drawable.logo;
+                prediction_resID = R.drawable.ic_predicting;
                 break;
         }
 
         runOnUiThread(() ->
                 card_current_activity_icon.setImageResource(prediction_resID)
         );
-
 
         if (sharedPref.contains(Constants.EXERCISE_TYPE)) {
             final int exercise_type_resID;
@@ -431,6 +464,5 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
 
         return !rightNow.isAfter(analysisStartDate.plusWeeks(1));
     }
-
 
 }

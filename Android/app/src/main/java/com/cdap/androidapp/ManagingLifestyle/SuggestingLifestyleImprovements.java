@@ -158,7 +158,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
         channel.setDescription("notifies the user of changes they can make to their current lifestyle");
         NotificationManager notificationManager = getSystemService(NotificationManager.class);
         notificationManager.createNotificationChannel(channel);
-        
+
         // notificationId is a unique int for each notification that you must define
         notificationManager.notify(notificationId, builder.build());
     }

@@ -186,18 +186,19 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
 
         String[] lines = message.split("(\\$%\\$%)");
+        if (values.isEmpty()) {
+            for (int i = 0; i < 200; i++) {
+                Reading reading = new Reading(
+                        lines[i].split("#&")[0], // x - axis
+                        lines[i].split("#&")[1], // y - axis
+                        lines[i].split("#&")[2] // z - axis
+                );
+                values.add(reading);
+            }
 
-        for (int i = 0; i < 200; i++) {
-            Reading reading = new Reading(
-                    lines[i].split("#&")[0], // x - axis
-                    lines[i].split("#&")[1], // y - axis
-                    lines[i].split("#&")[2] // z - axis
-            );
-            values.add(reading);
-        }
-
-        synchronized (makePredictionLock) { //making prediction via thread
-            makePredictionLock.notifyAll();
+            synchronized (makePredictionLock) { //making prediction via thread
+                makePredictionLock.notifyAll();
+            }
         }
     }
 
@@ -255,6 +256,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                         temp.put(2, values.get(i).zAxis);
                         readingsArray.put(temp);
                     }
+                    values.clear();
                     jsonArray.put(readingsArray);
                     jsonObject.put("data", jsonArray);
 
@@ -636,11 +638,14 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
         if (wakeLock != null && wakeLock.isHeld()) {
             wakeLock.release();
         }
+        isRunning = false;
         super.onDestroy();
         System.out.println("Wear OS destroy");
     }
 
-
-
-
+    @Override
+    public boolean stopService(Intent name) {
+        isRunning = false;
+        return super.stopService(name);
+    }
 }
