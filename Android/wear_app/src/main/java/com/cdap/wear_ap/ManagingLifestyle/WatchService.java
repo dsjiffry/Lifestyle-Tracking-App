@@ -33,18 +33,16 @@ import java.util.concurrent.ExecutionException;
 public class WatchService extends Service implements Runnable, SensorEventListener, MessageApi.MessageListener, GoogleApiClient.ConnectionCallbacks {
 
     private SensorManager sensorManager;
-    private Sensor accelerometer;
     private Sensor heartRate;
     private Context context;
     private GoogleApiClient googleClient;
-    private StringBuilder text = new StringBuilder();
+    private final StringBuilder text = new StringBuilder();
     public static float[] accelerometerReadings = {0, 0, 0};
-    private ArrayList<SensorEvent> readings = new ArrayList<>();
-    private Object messageSendingLock = new Object();
+    private final ArrayList<SensorEvent> readings = new ArrayList<>();
+    private final Object messageSendingLock = new Object();
     private boolean chargingMessageSent = false;
     private int numberOfHeartRateReadings = 0;
     private SensorEventListener sensorEventListener;
-    private float heartRateReading = 0.0f;
     private LocalDateTime lastHeartRateReading = null;
 
     private String message;
@@ -63,7 +61,7 @@ public class WatchService extends Service implements Runnable, SensorEventListen
     @Override
     public int onStartCommand(Intent intent, int flags, int startID) {
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         heartRate = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE);
         sensorEventListener = this;
 
@@ -87,7 +85,7 @@ public class WatchService extends Service implements Runnable, SensorEventListen
         thread.start();
 
 
-        return START_STICKY;
+        return Service.START_STICKY;
     }
 
 
@@ -101,8 +99,8 @@ public class WatchService extends Service implements Runnable, SensorEventListen
     private void onNewAccelerometerValue(SensorEvent sensorEvent) {
 
         Intent batteryStatus = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-        // Are we charging / charged?
-        int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+
+        int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);// Are we charging or fully charged
         boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
                 status == BatteryManager.BATTERY_STATUS_FULL;
 
@@ -141,7 +139,7 @@ public class WatchService extends Service implements Runnable, SensorEventListen
         this.message = message;
         this.payload = payload;
         synchronized (messageSendingLock) {
-            messageSendingLock.notify();
+            messageSendingLock.notifyAll();
         }
     }
 
@@ -163,7 +161,7 @@ public class WatchService extends Service implements Runnable, SensorEventListen
             System.arraycopy(sensorEvent.values, 0, accelerometerReadings, 0, 3);
         }
         if (sensor.getType() == Sensor.TYPE_HEART_RATE) {
-            heartRateReading = sensorEvent.values[0];
+            float heartRateReading = sensorEvent.values[0];
             System.out.println("HEARTRATE: " + heartRateReading);
             if (heartRateReading > 160.0f) // TODO: value needs to change with age
             {
@@ -209,7 +207,7 @@ public class WatchService extends Service implements Runnable, SensorEventListen
                 e.printStackTrace();
             }
 
-            if(lastHeartRateReading == null || lastHeartRateReading.plusMinutes(10).isAfter(LocalDateTime.now()))
+            if(lastHeartRateReading == null || LocalDateTime.now().isAfter(lastHeartRateReading.plusMinutes(10)))
             {
                 sensorManager.registerListener(sensorEventListener, heartRate, SensorManager.SENSOR_DELAY_NORMAL);
             }

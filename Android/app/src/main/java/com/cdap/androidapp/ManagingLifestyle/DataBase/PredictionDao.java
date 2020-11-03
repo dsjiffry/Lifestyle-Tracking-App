@@ -30,6 +30,9 @@ public interface PredictionDao {
     @Query("SELECT * FROM prediction_table WHERE day=(:day) AND month=(:month) AND year=(:year)")
     List<PredictionEntity> loadPredictionsByDate(int day, int month, int year);
 
+    @Query("SELECT * FROM prediction_table WHERE day=(:day) AND month=(:month) AND year=(:year) AND hour=(:hour)")
+    List<PredictionEntity> loadPredictionsByDate(int hour, int day, int month, int year);
 
-
+    @Query("SELECT * FROM (SELECT * FROM prediction_table order by id ASC limit (:numberOfPredictions)) order by id DESC;")
+    List<PredictionEntity> getLastFewPredictions(int numberOfPredictions);
 }
