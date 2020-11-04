@@ -66,8 +66,8 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
 
     public static volatile String PREDICTION = "predicting...";
-    public static Boolean isRunning = false;    //Used to check if service is already running
-    public static Boolean isAnalysisPeriod = true;    //Used to check if we are still in analysis week
+    public static Boolean isRunning = false;    // Used to check if service is already running
+    public static Boolean isAnalysisPeriod = true;    // Used to check if we are still in analysis week
     public final static String SERVER_URL = "http://192.168.8.140:8000/life";
     public static boolean IS_SERVER_REACHABLE = false;
 
