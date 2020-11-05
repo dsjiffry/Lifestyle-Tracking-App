@@ -95,6 +95,7 @@
         android:layout_height="45dp"
         android:layout_marginTop="16dp"
         android:background="@android:drawable/screen_background_dark_transparent"
+        android:onClick="openSuggestingImprovements"
         android:text="Improve Lifestyle"
         app:layout_constraintEnd_toEndOf="@+id/textView6"
         app:layout_constraintHorizontal_bias="0.492"

@@ -47,8 +47,8 @@ public class LifestyleNavigationActivity extends AppCompatActivity implements Ru
 
     public void openSuggestingImprovements(View v)
     {
-//        Intent intent = new Intent(LifestyleNavigationActivity.this, LifestyleMainActivity.class);
-//        this.startActivity(intent);
+        Intent intent = new Intent(LifestyleNavigationActivity.this, LifestyleSuggestingImprovementsActivity.class);
+        this.startActivity(intent);
     }
 
     @Override

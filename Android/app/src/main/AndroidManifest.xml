@@ -19,7 +19,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.NoActionBar"
         android:usesCleartextTraffic="true">
-        <activity android:name=".ManagingLifestyle.LifestyleNavigationActivity"></activity>
+        <activity android:name=".ManagingLifestyle.LifestyleSuggestingImprovementsActivity"></activity>
+        <activity android:name=".ManagingLifestyle.LifestyleNavigationActivity" />
         <activity android:name=".DailyRoutine.RoutineMainActivity" />
         <activity android:name=".FoodReccomendation.FoodMainActivity" />
         <activity android:name=".GameDifficulty.GameMainActivity" />
