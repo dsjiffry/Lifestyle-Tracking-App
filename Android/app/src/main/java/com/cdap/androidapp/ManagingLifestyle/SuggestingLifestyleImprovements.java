@@ -19,6 +19,7 @@ import com.cdap.androidapp.ManagingLifestyle.Models.Constants;
 import com.cdap.androidapp.R;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -28,6 +29,7 @@ import java.util.List;
 public class SuggestingLifestyleImprovements extends Service implements Runnable {
 
     public static Boolean isRunning = false;    //Used to check if service is already running
+    public static ArrayList<String> suggestions = new ArrayList<>();
     private Context context;
     private SharedPreferences sharedPref;
     private DataBaseManager dataBaseManager;
@@ -100,6 +102,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
                     "We recommend moving about for a bit",
                     R.drawable.long_sitting_icon,
                     Constants.SITTING_TOO_LONG);
+            suggestions.add("sitting too long");
         }
 
     }
@@ -133,6 +136,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
                             "An adult requires at least 7 hours of sleep. You get only " + hoursOfSleep,
                             R.drawable.ic_not_enough_sleep,
                             Constants.NOT_ENOUGH_SLEEP);
+                    suggestions.add("not enough sleep");
                 }
                 hoursOfSleep = sleepingHours;
             }

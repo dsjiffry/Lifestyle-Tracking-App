@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/lifestyle_background"
+    android:orientation="vertical"
     tools:context="com.cdap.androidapp.ManagingLifestyle.LifestyleMainActivity">
 
     <ScrollView
@@ -47,7 +48,7 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/current_activity_card"
+                android:id="@+id/pie_chart_card"
                 android:layout_width="match_parent"
                 android:layout_height="149dp"
                 android:layout_marginTop="8dp"

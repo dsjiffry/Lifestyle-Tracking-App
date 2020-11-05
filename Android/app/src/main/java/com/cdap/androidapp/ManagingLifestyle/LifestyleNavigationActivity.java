@@ -53,7 +53,7 @@ public class LifestyleNavigationActivity extends AppCompatActivity implements Ru
 
     @Override
     public void run() {
-        int NumberOfImages = 8;
+        int NumberOfImages = 5;
         int currentImageNumber = 1;
         try {
 
