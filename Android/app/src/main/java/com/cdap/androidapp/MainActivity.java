@@ -3,6 +3,8 @@ package com.cdap.androidapp;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
@@ -24,9 +26,9 @@ public class MainActivity extends AppCompatActivity implements Runnable {
 
 
     private ImageView background;
-    private Thread thread;
-    private Object slideshowLock = new Object();
-    private boolean pauseSlideshow = false;
+    private Handler handler;
+    private int NumberOfImages = 5;
+    private int currentImageNumber = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,8 +48,10 @@ public class MainActivity extends AppCompatActivity implements Runnable {
         setContentView(R.layout.activity_main);
         background = findViewById(R.id.background_image);
 
-        thread = new Thread(this);
-        thread.start();
+        HandlerThread handlerThread = new HandlerThread("slideshowThread"); //Name the handlerThread
+        handlerThread.start();
+        handler = new Handler(handlerThread.getLooper());
+        // handler started in onResume()
 
 
     }
@@ -56,12 +60,11 @@ public class MainActivity extends AppCompatActivity implements Runnable {
         Intent intent = new Intent(MainActivity.this, LifestyleNavigationActivity.class);
 //        intent.putExtra("key", value);
         this.startActivity(intent);
-        thread.interrupt();
     }
 
     public void setBackgroundImage(int imageNumber) {
 
-        int resourceID = getResources().getIdentifier("background_" + imageNumber, "drawable", getPackageName());
+        int resourceID = getResources().getIdentifier("intro_background_" + imageNumber, "drawable", getPackageName());
         Animation fadeIn = new AlphaAnimation(0.01f, 1);
         Animation fadeOut = new AlphaAnimation(1, 0.01f);
         fadeIn.setDuration(2000);
@@ -83,41 +86,26 @@ public class MainActivity extends AppCompatActivity implements Runnable {
 
     @Override
     public void run() {
-        int NumberOfImages = 5;
-        int currentImageNumber = 1;
-        try {
-
-            while (true) {
-                if (currentImageNumber > NumberOfImages) {
-                    currentImageNumber = 1;
-                }
-                setBackgroundImage(currentImageNumber);
-                currentImageNumber++;
-                if (pauseSlideshow) {
-                    synchronized (slideshowLock) {
-                        slideshowLock.wait();
-                    }
-                }
-
-                Thread.sleep(10000);
-
-            }
-        } catch (InterruptedException ignored) {
+        if (currentImageNumber > NumberOfImages) {
+            currentImageNumber = 1;
         }
+        setBackgroundImage(currentImageNumber);
+        currentImageNumber++;
+
+        handler.postDelayed(this, 10000); //Stop using: handler.removeCallbacks(this);
+
     }
+
 
     @Override
     protected void onPause() {
         super.onPause();
-        pauseSlideshow = true;
+        handler.removeCallbacks(this);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        pauseSlideshow = false;
-        synchronized (slideshowLock) {
-            slideshowLock.notifyAll();
-        }
+        handler.post(this);
     }
 }
