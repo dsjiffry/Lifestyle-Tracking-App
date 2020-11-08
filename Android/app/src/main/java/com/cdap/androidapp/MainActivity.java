@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity implements Runnable {
         fadeOut.setDuration(2000);
         fadeIn.reset();
         fadeOut.reset();
-        
+
         background.startAnimation(fadeOut);
         try {
             Thread.sleep(1900);
