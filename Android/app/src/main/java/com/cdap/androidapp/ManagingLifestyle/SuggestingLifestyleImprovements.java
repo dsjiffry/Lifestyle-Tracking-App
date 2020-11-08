@@ -6,6 +6,8 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
 
 import androidx.annotation.Nullable;
@@ -33,6 +35,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
     private Context context;
     private SharedPreferences sharedPref;
     private DataBaseManager dataBaseManager;
+    private Handler handler;
     private double hoursOfSleep = -1;
 
 
@@ -47,8 +50,10 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        Thread thread = new Thread(this);
-        thread.start();
+        HandlerThread handlerThread = new HandlerThread("MyHandlerThread"); //Name the handlerThread
+        handlerThread.start();
+        handler = new Handler(handlerThread.getLooper());
+        handler.post(this); // Start thread immediately
         isRunning = true;
 
         return Service.START_STICKY;
@@ -57,18 +62,11 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
 
     @Override
     public void run() {
-        try {
-            while (true) {
-                checkTimeSeated();
-                checkSleepHours();
+        checkTimeSeated();
+        checkSleepHours();
 
-                Thread.sleep(3600000); //one hour
-
-
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        handler.postDelayed(this, 3600000); //one hour
+        // Stop using: handler.removeCallbacks(this);
     }
 
     /**
