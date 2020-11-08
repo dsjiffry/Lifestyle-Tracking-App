@@ -595,7 +595,9 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                         //To stop use: handler.removeCallbacks(runnable);
                     }
                 }
-//                handler.postDelayed(this, 18000000 ); // 5 hours
+                if(isAnalysisPeriod) {
+                    localHandler.postDelayed(this, 18000000); // 5 hours
+                }
             }
         };
         localHandler.post(localRunnable); // Start thread immediately
