@@ -19,7 +19,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="1.0"
-        app:srcCompat="@drawable/lifestyle_background_5" />
+        app:srcCompat="@drawable/lifestyle_navigation_background" />
 
     <TextView
         android:id="@+id/textView4"

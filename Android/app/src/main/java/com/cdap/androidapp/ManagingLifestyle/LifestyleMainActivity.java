@@ -46,7 +46,6 @@ import java.util.concurrent.ExecutionException;
 public class LifestyleMainActivity extends AppCompatActivity implements Runnable {
 
     private Context context;
-    public final static String SERVER_URL = "http://192.168.8.140:8000/life";
     private SharedPreferences sharedPref;
     private URL url = null;
 
@@ -168,8 +167,9 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                     setUITextFromThreads(card_current_activity_subtext, "predicting...");
                 }
 
+                nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
                 if (isAnalysisPeriod()) {
-                    nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
+
 
                     if (!PhoneLifestyleService.isRunning && !nodes.isEmpty()) {
                         context.startService(phoneServiceIntent);
@@ -179,9 +179,6 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                         PhoneLifestyleService.PREDICTION = "Watch not connected";
                         context.stopService(phoneServiceIntent);
                     }
-
-                    updateUI();
-
                 } else {
 
                     if (!PhoneLifestyleService.isRunning && !nodes.isEmpty()) {
@@ -196,7 +193,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                     }
 
                 }
-
+                updateUI();
                 Thread.sleep(1000);
             }
         } catch (InterruptedException | ExecutionException e) {
@@ -406,7 +403,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
     public boolean isServerAvailable() {
         try {
             if (url == null) {
-                url = new URL(SERVER_URL);
+                url = new URL(PhoneLifestyleService.SERVER_URL);
             }
 
             //Creating JSON body to send
@@ -424,7 +421,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
             jsonObject.put("data", jsonArray);
 
             //Making POST request
-            URL url = new URL(SERVER_URL);
+            URL url = new URL(PhoneLifestyleService.SERVER_URL);
             HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
             httpURLConnection.setDoOutput(true);
             httpURLConnection.setRequestMethod("POST");
