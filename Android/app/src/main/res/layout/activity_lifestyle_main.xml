@@ -48,7 +48,7 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/pie_chart_card"
+                android:id="@+id/current_activity_card"
                 android:layout_width="match_parent"
                 android:layout_height="149dp"
                 android:layout_marginTop="8dp"
@@ -99,6 +99,75 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="@+id/card_current_activity_main_text"
                     app:srcCompat="@drawable/ic_predicting" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/basic_details_card"
+                android:layout_width="match_parent"
+                android:layout_height="149dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:background="@drawable/rounded_corner">
+
+                <TextView
+                    android:id="@+id/card_basic_details_main_text"
+                    android:layout_width="0dp"
+                    android:layout_height="61dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginEnd="8dp"
+                    android:gravity="center_horizontal|center_vertical"
+                    android:text="Basic Details"
+                    android:textAlignment="gravity"
+                    android:textColor="#FFFFFF"
+                    android:textSize="24sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0.0"
+                    app:layout_constraintStart_toEndOf="@+id/card_basic_details_icon"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/card_basic_details_subtext"
+                    android:layout_width="313dp"
+                    android:layout_height="53dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center_horizontal|center_vertical"
+                    android:text="details"
+                    android:textAlignment="gravity"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="@+id/card_basic_details_main_text"
+                    app:layout_constraintEnd_toStartOf="@+id/card_basic_details_edit_icon"
+                    app:layout_constraintHorizontal_bias="0.0"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/card_basic_details_main_text"
+                    app:layout_constraintVertical_bias="0.22000003" />
+
+                <ImageView
+                    android:id="@+id/card_basic_details_icon"
+                    android:layout_width="64dp"
+                    android:layout_height="61dp"
+                    android:layout_marginStart="8dp"
+                    app:layout_constraintBottom_toBottomOf="@+id/card_basic_details_main_text"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/card_basic_details_main_text"
+                    app:srcCompat="@drawable/ic_basic_details" />
+
+                <ImageView
+                    android:id="@+id/card_basic_details_edit_icon"
+                    android:layout_width="31dp"
+                    android:layout_height="35dp"
+                    android:layout_marginEnd="8dp"
+                    android:onClick="editButton"
+                    app:layout_constraintBottom_toBottomOf="@+id/card_basic_details_subtext"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0.5"
+                    app:layout_constraintStart_toEndOf="@+id/card_basic_details_subtext"
+                    app:layout_constraintTop_toTopOf="@+id/card_basic_details_subtext"
+                    app:srcCompat="@android:drawable/ic_menu_edit" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -38,7 +38,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
@@ -49,18 +48,12 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
     private SharedPreferences sharedPref;
     private URL url = null;
 
-    public ImageView card_current_activity_icon;
-    public ImageView card_exercise_type_icon;
+    public ImageView card_current_activity_icon, card_exercise_type_icon;
 
-    public TextView card_current_activity_subtext;
-    public TextView card_home_location_subtext;
-    public TextView card_work_location_subtext;
-    public TextView card_wake_time_subtext;
-    public TextView card_work_hours_subtext;
-    public TextView card_work_travel_subtext;
-    public TextView card_exercise_time_subtext;
-    public TextView card_exercise_type_subtext;
-    public TextView card_sleep_time_subtext;
+    public TextView card_current_activity_subtext, card_home_location_subtext, card_work_location_subtext,
+            card_wake_time_subtext, card_work_hours_subtext, card_work_travel_subtext,
+            card_exercise_time_subtext, card_exercise_type_subtext, card_sleep_time_subtext,
+            card_basic_detail_subtext;
 
 
     @Override
@@ -91,6 +84,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         card_exercise_time_subtext = findViewById(R.id.card_exercise_time_subtext);
         card_exercise_type_subtext = findViewById(R.id.card_exercise_type_subtext);
         card_sleep_time_subtext = findViewById(R.id.card_sleep_time_subtext);
+        card_basic_detail_subtext = findViewById(R.id.card_basic_details_subtext);
 
         sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
 
@@ -138,7 +132,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
 
         Intent phoneServiceIntent = new Intent(context, PhoneLifestyleService.class);
         Intent suggestingImprovementsIntent = new Intent(context, SuggestingLifestyleImprovements.class);
-        List<Node> nodes = new ArrayList<>();
+        List<Node> nodes;
         PhoneLifestyleService.IS_SERVER_REACHABLE = isServerAvailable();
 
 //        context.startService(suggestingImprovementsIntent);
@@ -226,6 +220,18 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         try {
 
             setUITextFromThreads(card_current_activity_subtext, PhoneLifestyleService.PREDICTION);
+
+            // Basic Details
+            if (sharedPref.contains(MainActivity.PREFERENCES_USERS_AGE)
+                    && sharedPref.contains(MainActivity.PREFERENCES_USERS_HEIGHT)
+                    && sharedPref.contains(MainActivity.PREFERENCES_USERS_WEIGHT)) {
+                int age = sharedPref.getInt(MainActivity.PREFERENCES_USERS_AGE, 0);
+                int height = sharedPref.getInt(MainActivity.PREFERENCES_USERS_HEIGHT, 0);
+                int weight = sharedPref.getInt(MainActivity.PREFERENCES_USERS_WEIGHT, 0);
+
+                String details = "Age: " + age + "\n" + "Height: " + height + "cm\t\t" + "Weight: " + weight+"Kg";
+                setUITextFromThreads(card_basic_detail_subtext, details);
+            }
 
             // Home Location
             if (sharedPref.contains(Constants.HOME_LATITUDE) && sharedPref.contains(Constants.HOME_LONGITUDE)) {
@@ -460,6 +466,18 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         LocalDate analysisStartDate = LocalDate.parse(sharedPref.getString(Constants.ANALYSIS_START_DATE, ""));
 
         return !rightNow.isAfter(analysisStartDate.plusWeeks(1));
+    }
+
+    public void editButton(View view)
+    {
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.remove(MainActivity.PREFERENCES_USERS_WEIGHT);
+        editor.remove(MainActivity.PREFERENCES_USERS_AGE);
+        editor.remove(MainActivity.PREFERENCES_USERS_HEIGHT);
+        editor.apply();
+
+        Intent intent = new Intent(LifestyleMainActivity.this, MainActivity.class);
+        this.startActivity(intent);
     }
 
 }
