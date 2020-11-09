@@ -3,4 +3,10 @@
     <color name="colorPrimary">#6200EE</color>
     <color name="colorPrimaryDark">#3700B3</color>
     <color name="colorAccent">#03DAC5</color>
+
+    <color name="Standing">#40C4FF</color>
+    <color name="Sitting">#FF6E40</color>
+    <color name="Walking">#69F0AE</color>
+    <color name="Stairs">#FF5252</color>
+    <color name="Jogging">#7C4DFF</color>
 </resources>

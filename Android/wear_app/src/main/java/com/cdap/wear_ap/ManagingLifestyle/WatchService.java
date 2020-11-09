@@ -65,6 +65,10 @@ public class WatchService extends Service implements Runnable, SensorEventListen
         heartRate = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE);
         sensorEventListener = this;
 
+//        SensorManager.SENSOR_DELAY_NORMAL -> 200,000 microsecond delay
+//        SensorManager.SENSOR_DELAY_FASTEST -> 0 microsecond delay
+//        SensorManager.SENSOR_DELAY_GAME -> 20,000 microsecond delay
+//        SensorManager.SENSOR_DELAY_UI -> 60,000 microsecond delay
         sensorManager.registerListener(this, accelerometer, 50000);
         context = getApplicationContext();
 

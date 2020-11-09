@@ -14,6 +14,7 @@ import android.hardware.display.DisplayManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.PowerManager;
 import android.view.Display;
 
@@ -24,8 +25,8 @@ import com.cdap.androidapp.MainActivity;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.DataBaseManager;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.PredictionEntity;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.UserActivities;
-import com.cdap.androidapp.ManagingLifestyle.Models.Reading;
 import com.cdap.androidapp.ManagingLifestyle.Models.Constants;
+import com.cdap.androidapp.ManagingLifestyle.Models.Reading;
 import com.cdap.androidapp.R;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.WearableListenerService;
@@ -57,6 +58,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * sleep time
  * home location
  * workplace location
+ *
  * work hours
  * exercise time
  * exercise type
@@ -66,9 +68,9 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
 
     public static volatile String PREDICTION = "predicting...";
-    public static Boolean isRunning = false;    //Used to check if service is already running
-    public static Boolean isAnalysisPeriod = true;    //Used to check if we are still in analysis week
-    public final static String SERVER_URL = "http://192.168.8.140:8000/life";
+    public static Boolean isRunning = false;    // Used to check if service is already running
+    public static Boolean isAnalysisPeriod = true;    // Used to check if we are still in analysis week
+    public final static String SERVER_URL = MainActivity.SERVER_BASE_URL + "/life";
     public static boolean IS_SERVER_REACHABLE = false;
 
     private final ArrayList<Reading> values = new ArrayList<>();    // Stores 200 accelerometer readings
@@ -79,7 +81,6 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     private boolean isCharging = false;
     private boolean isUnlocked = false;
     private SharedPreferences sharedPref;
-    private final Handler handler = new Handler();
     private ArrayList<Double> workLongitude;
     private ArrayList<Double> workLatitude;
     private IntentFilter intentFilter;
@@ -115,29 +116,30 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     @SuppressLint("WakelockTimeout")
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        isRunning = true;
-        IS_SERVER_REACHABLE = true;
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "phoneService")
-                .setContentTitle("Receiving sensor readings")
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setSmallIcon(R.drawable.common_full_open_on_phone)
-                .setOngoing(true);
+        if(!isRunning) {
+            isRunning = true;
+            IS_SERVER_REACHABLE = true;
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "phoneService")
+                    .setContentTitle("Receiving sensor readings")
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .setSmallIcon(R.drawable.common_full_open_on_phone)
+                    .setOngoing(true);
 
-        NotificationChannel channel = new NotificationChannel("phoneService", "lifestyle tracking", NotificationManager.IMPORTANCE_DEFAULT);
-        channel.setDescription("getting sensor readings from watch");
-        NotificationManager notificationManager = getSystemService(NotificationManager.class);
-        notificationManager.createNotificationChannel(channel);
-        NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
+            NotificationChannel channel = new NotificationChannel("phoneService", "lifestyle tracking", NotificationManager.IMPORTANCE_DEFAULT);
+            channel.setDescription("getting sensor readings from watch");
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+            NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
 
-        // notificationId is a unique int for each notification that you must define
-        notificationManagerCompat.notify(Constants.PHONE_SERVICE, builder.build());
-        final PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, PhoneLifestyleService.class.getSimpleName());
-        wakeLock.acquire();
+            // notificationId is a unique int for each notification that you must define
+            notificationManagerCompat.notify(Constants.PHONE_SERVICE, builder.build());
+            final PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, PhoneLifestyleService.class.getSimpleName());
+            wakeLock.acquire();
 
-        Thread thread = new Thread(this);
-        thread.start();
-
+            Thread thread = new Thread(this);
+            thread.start();
+        }
         return Service.START_STICKY;
     }
 
@@ -186,18 +188,19 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
 
         String[] lines = message.split("(\\$%\\$%)");
+        if (values.isEmpty()) {
+            for (int i = 0; i < 200; i++) {
+                Reading reading = new Reading(
+                        lines[i].split("#&")[0], // x - axis
+                        lines[i].split("#&")[1], // y - axis
+                        lines[i].split("#&")[2] // z - axis
+                );
+                values.add(reading);
+            }
 
-        for (int i = 0; i < 200; i++) {
-            Reading reading = new Reading(
-                    lines[i].split("#&")[0], // x - axis
-                    lines[i].split("#&")[1], // y - axis
-                    lines[i].split("#&")[2] // z - axis
-            );
-            values.add(reading);
-        }
-
-        synchronized (makePredictionLock) { //making prediction via thread
-            makePredictionLock.notifyAll();
+            synchronized (makePredictionLock) { //making prediction via thread
+                makePredictionLock.notifyAll();
+            }
         }
     }
 
@@ -255,6 +258,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                         temp.put(2, values.get(i).zAxis);
                         readingsArray.put(temp);
                     }
+                    values.clear();
                     jsonArray.put(readingsArray);
                     jsonObject.put("data", jsonArray);
 
@@ -446,10 +450,13 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
      * by checking the location after 11am and before 3pm.
      */
     private void determineWorkplaceLocation() {
-        Runnable runnable = new Runnable() {
+        HandlerThread handlerThread = new HandlerThread("determineWorkplaceLocationThread"); //Name the handlerThread
+        handlerThread.start();
+        Handler localHandler = new Handler(handlerThread.getLooper());
+        Runnable localRunnable = new Runnable() {
             public void run() {
                 if (!isAnalysisPeriod) {
-                    handler.removeCallbacks(this);
+                    localHandler.removeCallbacks(this);
                     return;
                 }
                 LocalDateTime rightNow = LocalDateTime.now();
@@ -461,7 +468,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                         workLongitude.add(currentLocation.getLongitude());
                         workLatitude.add(currentLocation.getLongitude());
 
-                        handler.postDelayed(this, 3600000); //Once per hour
+                        localHandler.postDelayed(this, 3600000); //Once per hour
 //                        Toast.makeText(context, "ONE Hour", Toast.LENGTH_LONG).show();
 
                     } else {
@@ -478,11 +485,11 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
                 } else {
                     long duration = (24 - rightNow.getHour()) * 3600000; //Time to next midnight in milliseconds
-                    handler.postDelayed(this, duration); //To stop use: handler.removeCallbacks(runnable);
+                    localHandler.postDelayed(this, duration); //To stop use: handler.removeCallbacks(runnable);
                 }
             }
         };
-        runnable.run();
+        localHandler.post(localRunnable); // Start thread immediately
 
     }
 
@@ -520,11 +527,15 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
      * Will monitor user's location and record the time when they enter the workplace and when they leave the workplace
      */
     private void determineWorkHours() {
+        HandlerThread handlerThread = new HandlerThread("determineWorkHoursThread"); //Name the handlerThread
+        handlerThread.start();
+        Handler localHandler = new Handler(handlerThread.getLooper());
+
         final AtomicBoolean isAtWork = new AtomicBoolean(false);
-        Runnable runnable = new Runnable() {
+        Runnable localRunnable = new Runnable() {
             public void run() {
                 if (!isAnalysisPeriod) {
-                    handler.removeCallbacks(this);
+                    localHandler.removeCallbacks(this);
                     return;
                 }
 
@@ -557,7 +568,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                         editor.apply();
                         isAtWork.set(true);
                     } else {
-                        handler.postDelayed(this, 600000); // 10 minutes
+                        localHandler.postDelayed(this, 600000); // 10 minutes
                         //To stop use: handler.removeCallbacks(runnable);
                     }
                 } else {///////////////////////////////////// Getting Time user leaves Workplace /////////////////////////////////////////////
@@ -582,14 +593,16 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                         editor.apply();
                         isAtWork.set(false);
                     } else {
-                        handler.postDelayed(this, 600000); // 10 minutes
+                        localHandler.postDelayed(this, 600000); // 10 minutes
                         //To stop use: handler.removeCallbacks(runnable);
                     }
                 }
-//                handler.postDelayed(this, 18000000 ); // 5 hours
+                if(isAnalysisPeriod) {
+                    localHandler.postDelayed(this, 18000000); // 5 hours
+                }
             }
         };
-        runnable.run();
+        localHandler.post(localRunnable); // Start thread immediately
     }
 
     /**
@@ -636,11 +649,14 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
         if (wakeLock != null && wakeLock.isHeld()) {
             wakeLock.release();
         }
+        isRunning = false;
         super.onDestroy();
         System.out.println("Wear OS destroy");
     }
 
-
-
-
+    @Override
+    public boolean stopService(Intent name) {
+        isRunning = false;
+        return super.stopService(name);
+    }
 }

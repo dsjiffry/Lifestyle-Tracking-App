@@ -123,7 +123,22 @@ public class LifestyleMainActivity extends WearableActivity {
             message.append("\n\n\n\n");
         }
 
-        message.append(rightNow.getHour()).append(":").append(rightNow.getMinute()).append("\n").append("Always-on mode").append("\n").append("Battery Level ").append(batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)).append("%");
+        String prefix;
+        if(rightNow.getHour() > 12) {
+            message.append(rightNow.getHour() - 12).append(":");
+            prefix = " pm";
+        }
+        else
+        {
+            message.append(rightNow.getHour()).append(":");
+            prefix = " am";
+        }
+        if(rightNow.getMinute() < 10)
+        {
+            message.append("0");
+        }
+        message.append(rightNow.getMinute());
+        message.append(prefix).append("\n").append("Always-on mode").append("\n").append("Battery Level ").append(batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)).append("%");
 
         mTextView.setText(message.toString());
 

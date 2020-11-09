@@ -6,6 +6,8 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
 
 import androidx.annotation.Nullable;
@@ -19,6 +21,7 @@ import com.cdap.androidapp.ManagingLifestyle.Models.Constants;
 import com.cdap.androidapp.R;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -28,9 +31,11 @@ import java.util.List;
 public class SuggestingLifestyleImprovements extends Service implements Runnable {
 
     public static Boolean isRunning = false;    //Used to check if service is already running
+    public static ArrayList<String> suggestions = new ArrayList<>();
     private Context context;
     private SharedPreferences sharedPref;
     private DataBaseManager dataBaseManager;
+    private Handler handler;
     private double hoursOfSleep = -1;
 
 
@@ -45,8 +50,10 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        Thread thread = new Thread(this);
-        thread.start();
+        HandlerThread handlerThread = new HandlerThread("MyHandlerThread"); //Name the handlerThread
+        handlerThread.start();
+        handler = new Handler(handlerThread.getLooper());
+        handler.post(this); // Start thread immediately
         isRunning = true;
 
         return Service.START_STICKY;
@@ -55,18 +62,11 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
 
     @Override
     public void run() {
-        try {
-            while (true) {
-                checkTimeSeated();
-                checkSleepHours();
+        checkTimeSeated();
+        checkSleepHours();
 
-                Thread.sleep(3600000); //one hour
-
-
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        handler.postDelayed(this, 3600000); //one hour
+        // Stop using: handler.removeCallbacks(this);
     }
 
     /**
@@ -100,6 +100,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
                     "We recommend moving about for a bit",
                     R.drawable.long_sitting_icon,
                     Constants.SITTING_TOO_LONG);
+            suggestions.add("sitting too long");
         }
 
     }
@@ -133,11 +134,26 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
                             "An adult requires at least 7 hours of sleep. You get only " + hoursOfSleep,
                             R.drawable.ic_not_enough_sleep,
                             Constants.NOT_ENOUGH_SLEEP);
+                    suggestions.add("not enough sleep");
                 }
                 hoursOfSleep = sleepingHours;
             }
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     @Nullable
@@ -158,7 +174,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
         channel.setDescription("notifies the user of changes they can make to their current lifestyle");
         NotificationManager notificationManager = getSystemService(NotificationManager.class);
         notificationManager.createNotificationChannel(channel);
-        
+
         // notificationId is a unique int for each notification that you must define
         notificationManager.notify(notificationId, builder.build());
     }
