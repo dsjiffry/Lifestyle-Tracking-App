@@ -1,10 +1,16 @@
 package com.cdap.androidapp.ManagingLifestyle;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.View;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
 
 import com.cdap.androidapp.ManagingLifestyle.DataBase.DataBaseManager;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.PercentageEntity;
@@ -19,9 +25,13 @@ import java.util.List;
 public class LifestyleSuggestingImprovementsActivity extends AppCompatActivity implements Runnable {
 
     private PieChart pieChart;
-    TextView chartStanding, chartSitting, chartWalking, chartStairs, chartJogging, chartNoOfDays;
+    TextView chartStanding, chartSitting, chartWalking,
+            chartStairs, chartJogging, chartNoOfDays,
+            suggestionsTopic;
     Context context;
     private DataBaseManager dataBaseManager;
+    private ConstraintLayout suggestionsCard;
+    private int previousTextViewID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,11 +46,13 @@ public class LifestyleSuggestingImprovementsActivity extends AppCompatActivity i
         chartJogging = findViewById(R.id.pieChart_jogging_textView);
         chartNoOfDays = findViewById(R.id.pieChart_noOfDays_textView);
         dataBaseManager = new DataBaseManager(context);
+        suggestionsCard = findViewById(R.id.suggestions_card);
+        suggestionsTopic = findViewById(R.id.suggestion_topic);
+        previousTextViewID = suggestionsTopic.getId();
 
 
         Thread thread = new Thread(this);
         thread.start();
-
     }
 
     @Override
@@ -71,8 +83,20 @@ public class LifestyleSuggestingImprovementsActivity extends AppCompatActivity i
             numberOfDays++;
         }
 
+        updatePieChart(standingPercentage, sittingPercentage, walkingPercentage, stairsPercentage, joggingPercentage, numberOfDays);
 
-        updatePieChart(standingPercentage, sittingPercentage, walkingPercentage, stairsPercentage, joggingPercentage,numberOfDays);
+
+
+
+
+        if(!SuggestingLifestyleImprovements.suggestions.isEmpty())
+        {
+            for(String suggestion : SuggestingLifestyleImprovements.suggestions)
+            {
+                addSuggestion(suggestion);
+            }
+        }
+
     }
 
     public void updatePieChart(int standingPercentage, int sittingPercentage, int walkingPercentage, int stairsPercentage, int joggingPercentage, int numberOfDays) {
@@ -104,13 +128,38 @@ public class LifestyleSuggestingImprovementsActivity extends AppCompatActivity i
         runOnUiThread(() -> {
             pieChart.startAnimation();
 
-            chartStanding.setText("Standing ("+standingPercentage+"%)");
-            chartSitting.setText("Sitting ("+sittingPercentage+"%)");
-            chartWalking.setText("Walking ("+walkingPercentage+"%)");
-            chartStairs.setText("Stairs ("+stairsPercentage+"%)");
-            chartJogging.setText("Jogging ("+joggingPercentage+"%)");
+            chartStanding.setText("Standing (" + standingPercentage + "%)");
+            chartSitting.setText("Sitting (" + sittingPercentage + "%)");
+            chartWalking.setText("Walking (" + walkingPercentage + "%)");
+            chartStairs.setText("Stairs (" + stairsPercentage + "%)");
+            chartJogging.setText("Jogging (" + joggingPercentage + "%)");
             chartNoOfDays.setText("Number of days: " + numberOfDays);
         });
+    }
+
+
+    public void addSuggestion(String message) {
+        TextView textView = new TextView(context);
+        textView.setId(View.generateViewId());
+        textView.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        textView.setGravity(Gravity.CENTER);
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        textView.setTextColor(Color.WHITE);
+        textView.setText(message);
+
+        suggestionsCard.addView(textView);
+        ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(ConstraintLayout.LayoutParams.MATCH_PARENT, 150);
+        params.setMargins(8,8,8,8);
+        textView.setLayoutParams(params);
+
+
+
+        ConstraintSet constraintSet = new ConstraintSet();
+        constraintSet.clone(suggestionsCard);
+        constraintSet.connect(textView.getId(), ConstraintSet.TOP, previousTextViewID, ConstraintSet.BOTTOM);
+        constraintSet.applyTo(suggestionsCard);
+
+        previousTextViewID = textView.getId();
     }
 }
 

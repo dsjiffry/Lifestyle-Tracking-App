@@ -134,7 +134,7 @@
                     android:layout_marginTop="8dp"
                     android:layout_marginBottom="8dp"
                     android:gravity="center_horizontal|center_vertical"
-                    android:text="details"
+                    android:text="loading..."
                     android:textAlignment="gravity"
                     android:textColor="#FFFFFF"
                     android:textSize="18sp"
@@ -552,7 +552,7 @@
                     app:layout_constraintBottom_toBottomOf="@+id/card_exercise_type_main_text"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="@+id/card_exercise_type_main_text"
-                    app:srcCompat="@drawable/logo" />
+                    app:srcCompat="@drawable/ic_predicting" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 

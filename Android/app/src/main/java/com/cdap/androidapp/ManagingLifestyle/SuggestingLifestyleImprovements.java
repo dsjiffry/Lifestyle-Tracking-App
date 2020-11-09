@@ -142,6 +142,20 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
     }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {

@@ -58,6 +58,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * sleep time
  * home location
  * workplace location
+ *
  * work hours
  * exercise time
  * exercise type
@@ -115,29 +116,30 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     @SuppressLint("WakelockTimeout")
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        isRunning = true;
-        IS_SERVER_REACHABLE = true;
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "phoneService")
-                .setContentTitle("Receiving sensor readings")
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setSmallIcon(R.drawable.common_full_open_on_phone)
-                .setOngoing(true);
+        if(!isRunning) {
+            isRunning = true;
+            IS_SERVER_REACHABLE = true;
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "phoneService")
+                    .setContentTitle("Receiving sensor readings")
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .setSmallIcon(R.drawable.common_full_open_on_phone)
+                    .setOngoing(true);
 
-        NotificationChannel channel = new NotificationChannel("phoneService", "lifestyle tracking", NotificationManager.IMPORTANCE_DEFAULT);
-        channel.setDescription("getting sensor readings from watch");
-        NotificationManager notificationManager = getSystemService(NotificationManager.class);
-        notificationManager.createNotificationChannel(channel);
-        NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
+            NotificationChannel channel = new NotificationChannel("phoneService", "lifestyle tracking", NotificationManager.IMPORTANCE_DEFAULT);
+            channel.setDescription("getting sensor readings from watch");
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+            NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
 
-        // notificationId is a unique int for each notification that you must define
-        notificationManagerCompat.notify(Constants.PHONE_SERVICE, builder.build());
-        final PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, PhoneLifestyleService.class.getSimpleName());
-        wakeLock.acquire();
+            // notificationId is a unique int for each notification that you must define
+            notificationManagerCompat.notify(Constants.PHONE_SERVICE, builder.build());
+            final PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, PhoneLifestyleService.class.getSimpleName());
+            wakeLock.acquire();
 
-        Thread thread = new Thread(this);
-        thread.start();
-
+            Thread thread = new Thread(this);
+            thread.start();
+        }
         return Service.START_STICKY;
     }
 

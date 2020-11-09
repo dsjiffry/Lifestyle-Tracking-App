@@ -137,10 +137,10 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
 
 //        context.startService(suggestingImprovementsIntent);
 
+        while (true) {
+            try {
 
-        try {
-            while (true) {
-
+                updateUI();
                 if (!PhoneLifestyleService.isRunning) {
                     PhoneLifestyleService.IS_SERVER_REACHABLE = isServerAvailable();
                 }
@@ -187,12 +187,13 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                     }
 
                 }
-                updateUI();
+
                 Thread.sleep(1000);
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
             }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
         }
+
 
     }
 
@@ -229,7 +230,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                 int height = sharedPref.getInt(MainActivity.PREFERENCES_USERS_HEIGHT, 0);
                 int weight = sharedPref.getInt(MainActivity.PREFERENCES_USERS_WEIGHT, 0);
 
-                String details = "Age: " + age + "\n" + "Height: " + height + "cm\t\t" + "Weight: " + weight+"Kg";
+                String details = "Age: " + age + "\n" + "Height: " + height + "cm\t\t" + "Weight: " + weight + "Kg";
                 setUITextFromThreads(card_basic_detail_subtext, details);
             }
 
@@ -262,8 +263,13 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                         hour = hour - 12;
                     }
                 }
-                String time = hour + ":" + minute + " " + prefix;
-                setUITextFromThreads(card_wake_time_subtext, time);
+                StringBuilder time = new StringBuilder();
+                time.append(hour).append(":");
+                if (minute < 10) {
+                    time.append("0");
+                }
+                time.append(minute).append(" ").append(prefix);
+                setUITextFromThreads(card_wake_time_subtext, time.toString());
             }
 
             // Work Hours
@@ -279,7 +285,11 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                         hour = hour - 12;
                     }
                 }
-                workHours.append("From" + hour + ":" + minute + " " + prefix + " to ");
+                workHours.append("From").append(hour).append(":");
+                if (minute < 10) {
+                    workHours.append("0");
+                }
+                workHours.append(minute).append(" ").append(prefix).append(" to ");
 
                 hour = sharedPref.getInt(Constants.WORK_END_TIME_HOUR, -1);
                 minute = sharedPref.getInt(Constants.WORK_END_TIME_MINUTE, -1);
@@ -290,7 +300,11 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                         hour = hour - 12;
                     }
                 }
-                workHours.append(hour + ":" + minute + " " + prefix);
+                workHours.append(hour).append(":");
+                if (minute < 10) {
+                    workHours.append("0");
+                }
+                workHours.append(minute).append(" ").append(prefix);
                 setUITextFromThreads(card_work_hours_subtext, workHours.toString());
             }
 
@@ -312,8 +326,13 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                         hour = hour - 12;
                     }
                 }
-                String time = hour + ":" + minute + " " + prefix;
-                setUITextFromThreads(card_exercise_time_subtext, time);
+                StringBuilder time = new StringBuilder();
+                time.append(hour).append(":");
+                if (minute < 10) {
+                    time.append("0");
+                }
+                time.append(minute).append(" ").append(prefix);
+                setUITextFromThreads(card_exercise_time_subtext, time.toString());
             }
 
             // Exercise Type
@@ -333,8 +352,13 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                         hour = hour - 12;
                     }
                 }
-                String time = hour + ":" + minute + " " + prefix;
-                setUITextFromThreads(card_sleep_time_subtext, time);
+                StringBuilder time = new StringBuilder();
+                time.append(hour).append(":");
+                if (minute < 10) {
+                    time.append("0");
+                }
+                time.append(minute).append(" ").append(prefix);
+                setUITextFromThreads(card_sleep_time_subtext, time.toString());
             }
 
 
@@ -394,7 +418,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                     exercise_type_resID = R.drawable.ic_exercise_type_gym;
                     break;
                 default:
-                    exercise_type_resID = R.drawable.logo;
+                    exercise_type_resID = R.drawable.ic_predicting;
                     break;
             }
             runOnUiThread(() ->
@@ -461,6 +485,9 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         return false;
     }
 
+    /**
+     * @return true if still in the first week of running the app (analysis period)
+     */
     private boolean isAnalysisPeriod() {
         LocalDate rightNow = LocalDate.now();
         LocalDate analysisStartDate = LocalDate.parse(sharedPref.getString(Constants.ANALYSIS_START_DATE, ""));
@@ -468,8 +495,10 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         return !rightNow.isAfter(analysisStartDate.plusWeeks(1));
     }
 
-    public void editButton(View view)
-    {
+    /**
+     * will send user to Activity to edit their basic details
+     */
+    public void editButton(View view) {
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.remove(MainActivity.PREFERENCES_USERS_WEIGHT);
         editor.remove(MainActivity.PREFERENCES_USERS_AGE);

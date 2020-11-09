@@ -43,6 +43,16 @@ public class MainActivity extends AppCompatActivity implements Runnable {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
+        if (sharedPref.contains(MainActivity.PREFERENCES_USERS_AGE)
+                && sharedPref.contains(MainActivity.PREFERENCES_USERS_HEIGHT)
+                && sharedPref.contains(MainActivity.PREFERENCES_USERS_WEIGHT)) {
+            Intent intent = new Intent(MainActivity.this, NavigationActivity.class);
+//        intent.putExtra("key", value);
+            this.startActivity(intent);
+            return;
+        }
+
         //Making status bar and navigation bar transparent
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
@@ -61,16 +71,8 @@ public class MainActivity extends AppCompatActivity implements Runnable {
         heightInput = findViewById(R.id.heightInput);
         weightInput = findViewById(R.id.weightInput);
         background = findViewById(R.id.background_image);
-        sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
 
-        if (sharedPref.contains(MainActivity.PREFERENCES_USERS_AGE)
-                && sharedPref.contains(MainActivity.PREFERENCES_USERS_HEIGHT)
-                && sharedPref.contains(MainActivity.PREFERENCES_USERS_WEIGHT)) {
-            Intent intent = new Intent(MainActivity.this, NavigationActivity.class);
-//        intent.putExtra("key", value);
-            this.startActivity(intent);
-            return;
-        }
+
 
         HandlerThread handlerThread = new HandlerThread("slideshowThread"); //Name the handlerThread
         handlerThread.start();

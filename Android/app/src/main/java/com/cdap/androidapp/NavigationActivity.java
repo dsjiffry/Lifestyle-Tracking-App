@@ -1,5 +1,6 @@
 package com.cdap.androidapp;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -9,8 +10,11 @@ import android.view.WindowManager;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.cdap.androidapp.ManagingLifestyle.LifestyleNavigationActivity;
+import com.cdap.androidapp.ManagingLifestyle.PhoneLifestyleService;
 
-public class NavigationActivity extends AppCompatActivity {
+public class NavigationActivity extends AppCompatActivity implements Runnable{
+
+    private Context context;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,7 +31,11 @@ public class NavigationActivity extends AppCompatActivity {
         getWindow().setStatusBarColor(Color.parseColor("#42000000"));
         getWindow().setNavigationBarColor(Color.parseColor("#42000000"));
 
+        context = getApplicationContext();
         setContentView(R.layout.activity_navigation);
+
+        Thread thread = new Thread(this);
+        thread.start();
     }
 
     public void toEmotionSection(View view) {
@@ -61,6 +69,16 @@ public class NavigationActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        return;
+    }
+
+    @Override
+    public void run() {
+
+        //////////////////////////////////// Starting the Lifestyle Background Service ////////////////////////////////////
+
+        Intent phoneServiceIntent = new Intent(context, PhoneLifestyleService.class);
+        context.startService(phoneServiceIntent);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     }
 }
