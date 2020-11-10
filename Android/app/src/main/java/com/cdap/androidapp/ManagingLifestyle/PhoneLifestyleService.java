@@ -58,7 +58,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * sleep time
  * home location
  * workplace location
- *
  * work hours
  * exercise time
  * exercise type
@@ -68,7 +67,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
 
     public static volatile String PREDICTION = "predicting...";
-    public static Boolean isRunning = false;    // Used to check if service is already running
+    public static volatile Boolean isRunning = false;    // Used to check if service is already running
     public static Boolean isAnalysisPeriod = true;    // Used to check if we are still in analysis week
     public final static String SERVER_URL = MainActivity.SERVER_BASE_URL + "/life";
     public static boolean IS_SERVER_REACHABLE = false;
@@ -81,8 +80,6 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     private boolean isCharging = false;
     private boolean isUnlocked = false;
     private SharedPreferences sharedPref;
-    private ArrayList<Double> workLongitude;
-    private ArrayList<Double> workLatitude;
     private IntentFilter intentFilter;
     private BroadcastReceiver broadcastReceiver;
 
@@ -92,9 +89,6 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     public void onCreate() {
         super.onCreate();
         context = getApplicationContext();
-        workLongitude = new ArrayList<>();
-        workLatitude = new ArrayList<>();
-
         sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
         intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
@@ -116,7 +110,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     @SuppressLint("WakelockTimeout")
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if(!isRunning) {
+        if (!isRunning) {
             isRunning = true;
             IS_SERVER_REACHABLE = true;
             NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "phoneService")
@@ -208,8 +202,8 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     @Override
     public void run() {
         sendPostMessage(); //Starting up the thread
-        determineWorkHours(); //runs in separate thread
         determineWorkplaceLocation(); //runs in separate thread
+        determineWorkHours(); //runs in separate thread
 
         while (isAnalysisPeriod) {
 
@@ -455,6 +449,8 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
         HandlerThread handlerThread = new HandlerThread("determineWorkplaceLocationThread"); //Name the handlerThread
         handlerThread.start();
         Handler localHandler = new Handler(handlerThread.getLooper());
+        ArrayList<Double> workLongitude = new ArrayList<>();
+        ArrayList<Double> workLatitude = new ArrayList<>();
         Runnable localRunnable = new Runnable() {
             public void run() {
                 if (!isAnalysisPeriod) {
@@ -464,14 +460,14 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                 LocalDateTime rightNow = LocalDateTime.now();
                 if (rightNow.getDayOfWeek() != DayOfWeek.SATURDAY && rightNow.getDayOfWeek() != DayOfWeek.SUNDAY) {
 
+
                     if (rightNow.getHour() >= 11 && rightNow.getHour() <= 15) //in between 11am and 3pm
                     {
                         Location currentLocation = getCurrentLocation();
                         workLongitude.add(currentLocation.getLongitude());
                         workLatitude.add(currentLocation.getLongitude());
 
-                        localHandler.postDelayed(this, 3600000); //Once per hour
-//                        Toast.makeText(context, "ONE Hour", Toast.LENGTH_LONG).show();
+                        //Toast.makeText(context, "ONE Hour", Toast.LENGTH_LONG).show();
 
                     } else {
                         if (!workLatitude.isEmpty() && !workLongitude.isEmpty()) {
@@ -483,6 +479,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                             editor.apply();
                         }
                     }
+                    localHandler.postDelayed(this, 3600000); //Once per hour
 
 
                 } else {
@@ -503,25 +500,24 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
             return;
         }
 
-        //Detecting how user goes to work
-        if (!sharedPref.contains(Constants.WORK_TRAVEL_METHOD)) {
-            SharedPreferences.Editor editor = sharedPref.edit();
-            editor.putString(Constants.WORK_TRAVEL_METHOD, Constants.WALKING);
-            editor.apply();
+        if (sharedPref.getString(Constants.WORK_TRAVEL_METHOD, "").equalsIgnoreCase(Constants.VEHICLE)) {
+            return;
         }
+
 
         int wakeHour = sharedPref.getInt(Constants.WAKE_TIME_HOUR, -1);
         int atWorkHour = sharedPref.getInt(Constants.WORK_START_TIME_HOUR, -1);
         if (wakeHour >= 0 && atWorkHour >= 0) {
             LocalDateTime rightNow = LocalDateTime.now();
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putString(Constants.WORK_TRAVEL_METHOD, Constants.WALKING);
             if (rightNow.getHour() > wakeHour && rightNow.getHour() < atWorkHour) {
-                if (getCurrentLocation().getSpeed() > 3.0f) // 3 m/s = 10.8 km/h
+                if (getCurrentLocation().getSpeed() > 11.0f) // 11 m/s = 40 km/h
                 {
-                    SharedPreferences.Editor editor = sharedPref.edit();
                     editor.putString(Constants.WORK_TRAVEL_METHOD, Constants.VEHICLE);
-                    editor.apply();
                 }
             }
+            editor.apply();
         }
     }
 
@@ -541,7 +537,8 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                     return;
                 }
 
-                if (!sharedPref.contains(Constants.WORK_LATITUDE) && !sharedPref.contains(Constants.WORK_LONGITUDE)) { //Should not happen
+                if (!sharedPref.contains(Constants.WORK_LATITUDE) && !sharedPref.contains(Constants.WORK_LONGITUDE)) {
+                    localHandler.postDelayed(this, 18000000); // 5 hours
                     return;
                 }
 
@@ -571,6 +568,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                         isAtWork.set(true);
                     } else {
                         localHandler.postDelayed(this, 600000); // 10 minutes
+                        return;
                         //To stop use: handler.removeCallbacks(runnable);
                     }
                 } else {///////////////////////////////////// Getting Time user leaves Workplace /////////////////////////////////////////////
@@ -596,16 +594,23 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                         isAtWork.set(false);
                     } else {
                         localHandler.postDelayed(this, 600000); // 10 minutes
+                        return;
                         //To stop use: handler.removeCallbacks(runnable);
                     }
                 }
-                if(isAnalysisPeriod) {
+                if (isAnalysisPeriod) {
                     localHandler.postDelayed(this, 18000000); // 5 hours
                 }
             }
         };
         localHandler.post(localRunnable); // Start thread immediately
     }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
     /**
      * Once the week of analyzing is over we need to start the {@link SuggestingLifestyleImprovements} service
@@ -644,7 +649,6 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
         }
         return currentLocation;
     }
-
 
     @Override
     public void onDestroy() {

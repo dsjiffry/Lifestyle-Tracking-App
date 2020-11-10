@@ -30,7 +30,7 @@ import java.util.List;
  */
 public class SuggestingLifestyleImprovements extends Service implements Runnable {
 
-    public static Boolean isRunning = false;    //Used to check if service is already running
+    public static volatile Boolean isRunning = false;    //Used to check if service is already running
     public static ArrayList<String> suggestions = new ArrayList<>();
     private Context context;
     private SharedPreferences sharedPref;
@@ -177,6 +177,12 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
 
         // notificationId is a unique int for each notification that you must define
         notificationManager.notify(notificationId, builder.build());
+    }
+
+    @Override
+    public boolean stopService(Intent name) {
+        isRunning = false;
+        return super.stopService(name);
     }
 
 }
