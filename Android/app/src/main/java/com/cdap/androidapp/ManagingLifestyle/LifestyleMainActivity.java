@@ -143,7 +143,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                     runOnUiThread(() ->
                             card_current_activity_icon.setImageResource(R.drawable.ic_server_unavailable)
                     );
-                    while (!isServerAvailable()) //Wait till server is available
+                    while (!isServerAvailable()) // Wait till server is available
                     {
                         Thread.sleep(10000);
                     }
@@ -502,5 +502,6 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         Intent intent = new Intent(LifestyleMainActivity.this, MainActivity.class);
         this.startActivity(intent);
     }
+
 
 }

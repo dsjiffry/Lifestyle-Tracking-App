@@ -69,7 +69,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     public static volatile String PREDICTION = "predicting...";
     public static volatile Boolean isRunning = false;    // Used to check if service is already running
     public static Boolean isAnalysisPeriod = true;    // Used to check if we are still in analysis week
-    public final static String SERVER_URL = MainActivity.SERVER_BASE_URL + "/life";
+    public static final String SERVER_URL = MainActivity.SERVER_BASE_URL + "/life";
     public static boolean IS_SERVER_REACHABLE = false;
 
     private final ArrayList<Reading> values = new ArrayList<>();    // Stores 200 accelerometer readings
@@ -82,6 +82,8 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     private SharedPreferences sharedPref;
     private IntentFilter intentFilter;
     private BroadcastReceiver broadcastReceiver;
+    private Runnable workplaceLocationRunnable, workHourRunnable;
+    private Handler workplaceLocationHandler, workHoursHandler;
 
     private final Object makePredictionLock = new Object();
 
@@ -207,6 +209,17 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
         while (isAnalysisPeriod) {
 
+            if (!isRunning) {
+                if(workplaceLocationHandler != null && workplaceLocationRunnable != null)
+                {
+                    workplaceLocationHandler.removeCallbacks(workplaceLocationRunnable);
+                }
+                if(workHoursHandler != null && workHourRunnable != null) {
+                    workHoursHandler.removeCallbacks(workHourRunnable);
+                }
+                return;
+            }
+
             checkEndOfAnalysisPeriod();
             determineWorkplaceTravelMethod();
 
@@ -227,9 +240,16 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     public void sendPostMessage() {
         (new Thread(() -> {
             while (true) {
+                if (!isRunning) {
+                    return;
+                }
                 try {
                     synchronized (makePredictionLock) {
+                        values.clear();
                         makePredictionLock.wait();
+                        if (!isRunning) {
+                            return;
+                        }
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -448,13 +468,13 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     private void determineWorkplaceLocation() {
         HandlerThread handlerThread = new HandlerThread("determineWorkplaceLocationThread"); //Name the handlerThread
         handlerThread.start();
-        Handler localHandler = new Handler(handlerThread.getLooper());
         ArrayList<Double> workLongitude = new ArrayList<>();
         ArrayList<Double> workLatitude = new ArrayList<>();
-        Runnable localRunnable = new Runnable() {
+        workplaceLocationHandler = new Handler(handlerThread.getLooper());
+        workplaceLocationRunnable = new Runnable() {
             public void run() {
-                if (!isAnalysisPeriod) {
-                    localHandler.removeCallbacks(this);
+                if (!isAnalysisPeriod || !isRunning) {
+                    workplaceLocationHandler.removeCallbacks(this);
                     return;
                 }
                 LocalDateTime rightNow = LocalDateTime.now();
@@ -479,16 +499,16 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                             editor.apply();
                         }
                     }
-                    localHandler.postDelayed(this, 3600000); //Once per hour
+                    workplaceLocationHandler.postDelayed(this, 3600000); //Once per hour
 
 
                 } else {
                     long duration = (24 - rightNow.getHour()) * 3600000; //Time to next midnight in milliseconds
-                    localHandler.postDelayed(this, duration); //To stop use: handler.removeCallbacks(runnable);
+                    workplaceLocationHandler.postDelayed(this, duration); //To stop use: handler.removeCallbacks(workplaceLocationRunnable);
                 }
             }
         };
-        localHandler.post(localRunnable); // Start thread immediately
+        workplaceLocationHandler.post(workplaceLocationRunnable); // Start thread immediately
 
     }
 
@@ -527,18 +547,18 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     private void determineWorkHours() {
         HandlerThread handlerThread = new HandlerThread("determineWorkHoursThread"); //Name the handlerThread
         handlerThread.start();
-        Handler localHandler = new Handler(handlerThread.getLooper());
+        workHoursHandler = new Handler(handlerThread.getLooper());
 
         final AtomicBoolean isAtWork = new AtomicBoolean(false);
-        Runnable localRunnable = new Runnable() {
+        workHourRunnable = new Runnable() {
             public void run() {
-                if (!isAnalysisPeriod) {
-                    localHandler.removeCallbacks(this);
+                if (!isAnalysisPeriod || !isRunning) {
+                    workHoursHandler.removeCallbacks(this);
                     return;
                 }
 
                 if (!sharedPref.contains(Constants.WORK_LATITUDE) && !sharedPref.contains(Constants.WORK_LONGITUDE)) {
-                    localHandler.postDelayed(this, 18000000); // 5 hours
+                    workHoursHandler.postDelayed(this, 18000000); // 5 hours
                     return;
                 }
 
@@ -567,7 +587,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                         editor.apply();
                         isAtWork.set(true);
                     } else {
-                        localHandler.postDelayed(this, 600000); // 10 minutes
+                        workHoursHandler.postDelayed(this, 600000); // 10 minutes
                         return;
                         //To stop use: handler.removeCallbacks(runnable);
                     }
@@ -593,17 +613,17 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                         editor.apply();
                         isAtWork.set(false);
                     } else {
-                        localHandler.postDelayed(this, 600000); // 10 minutes
+                        workHoursHandler.postDelayed(this, 600000); // 10 minutes
                         return;
                         //To stop use: handler.removeCallbacks(runnable);
                     }
                 }
                 if (isAnalysisPeriod) {
-                    localHandler.postDelayed(this, 18000000); // 5 hours
+                    workHoursHandler.postDelayed(this, 18000000); // 5 hours
                 }
             }
         };
-        localHandler.post(localRunnable); // Start thread immediately
+        workHoursHandler.post(workHourRunnable); // Start thread immediately
     }
 
 

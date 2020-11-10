@@ -30,6 +30,8 @@ public class Constants {
 
     public static final String HOME_LATITUDE = "lifestyle_" + "HomeLatitude";
     public static final String HOME_LONGITUDE = "lifestyle_" + "HomeLongitude";
+
+    public static final String IMPROVEMENTS = "lifestyle_" + "improvements";
     //////////////////////////////////////////////////////////////////////////////////////////////
 
 

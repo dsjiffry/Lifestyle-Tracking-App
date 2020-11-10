@@ -35,8 +35,8 @@ public class MainActivity extends AppCompatActivity implements Runnable {
     private ImageView background;
     private Handler handler;
     private Context context;
-    private int NumberOfImages = 5;
-    private int currentImageNumber = 1;
+    private int NumberOfBackgroundImages = 5;
+    private int currentBackgroundImageNumber = 1;
     private SharedPreferences sharedPref;
     private EditText ageInput, heightInput, weightInput;
 
@@ -144,11 +144,11 @@ public class MainActivity extends AppCompatActivity implements Runnable {
 
     @Override
     public void run() {
-        if (currentImageNumber > NumberOfImages) {
-            currentImageNumber = 1;
+        if (currentBackgroundImageNumber > NumberOfBackgroundImages) {
+            currentBackgroundImageNumber = 1;
         }
-        setBackgroundImage(currentImageNumber);
-        currentImageNumber++;
+        setBackgroundImage(currentBackgroundImageNumber);
+        currentBackgroundImageNumber++;
 
         handler.postDelayed(this, 10000); //Stop using: handler.removeCallbacks(this);
 
