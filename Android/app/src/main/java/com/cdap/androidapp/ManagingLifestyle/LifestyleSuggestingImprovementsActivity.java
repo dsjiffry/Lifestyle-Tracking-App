@@ -83,7 +83,14 @@ public class LifestyleSuggestingImprovementsActivity extends AppCompatActivity i
             numberOfDays++;
         }
 
-        updatePieChart(standingPercentage, sittingPercentage, walkingPercentage, stairsPercentage, joggingPercentage, numberOfDays);
+        numberOfDays = numberOfDays/5;
+
+        updatePieChart(standingPercentage/numberOfDays,
+                sittingPercentage/numberOfDays,
+                walkingPercentage/numberOfDays,
+                stairsPercentage/numberOfDays,
+                joggingPercentage/numberOfDays,
+                numberOfDays);
 
 
 
