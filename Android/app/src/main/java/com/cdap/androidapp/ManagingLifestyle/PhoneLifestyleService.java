@@ -305,8 +305,10 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                     previousPredictionEntity = predictionEntity;
                 } catch (ConnectException e) {
                     IS_SERVER_REACHABLE = false;
+                    values.clear();
                 } catch (IOException | JSONException e) {
                     e.printStackTrace();
+                    values.clear();
                 }
             }
         })).start();
