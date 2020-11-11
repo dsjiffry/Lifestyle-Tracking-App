@@ -77,6 +77,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     private URL url = null;
     private PredictionEntity previousPredictionEntity = null;
     private PowerManager.WakeLock wakeLock = null;
+    private Thread thread = null;
     private boolean isCharging = false;
     private boolean isUnlocked = false;
     private SharedPreferences sharedPref;
@@ -84,6 +85,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     private BroadcastReceiver broadcastReceiver;
     private Runnable workplaceLocationRunnable, workHourRunnable;
     private Handler workplaceLocationHandler, workHoursHandler;
+
 
     private final Object makePredictionLock = new Object();
 
@@ -109,10 +111,12 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
     }
 
+
+
     @SuppressLint("WakelockTimeout")
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (!isRunning) {
+        if (thread == null || !thread.isAlive()) {
             isRunning = true;
             IS_SERVER_REACHABLE = true;
             NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "phoneService")
@@ -133,7 +137,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
             wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, PhoneLifestyleService.class.getSimpleName());
             wakeLock.acquire();
 
-            Thread thread = new Thread(this);
+            thread = new Thread(this);
             thread.start();
         }
         return Service.START_STICKY;
@@ -240,10 +244,17 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     public void sendPostMessage() {
         (new Thread(() -> {
             while (true) {
-                if (!isRunning) {
-                    return;
-                }
                 try {
+
+                    while (!IS_SERVER_REACHABLE) {
+                        IS_SERVER_REACHABLE = isServerAvailable();
+                        Thread.sleep(2000);
+                    }
+
+                    if (!isRunning) {
+                        return;
+                    }
+
                     synchronized (makePredictionLock) {
                         values.clear();
                         makePredictionLock.wait();
@@ -251,12 +262,8 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                             return;
                         }
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
 
 
-                try {
                     if (url == null) {
                         url = new URL(SERVER_URL);
                     }
@@ -277,7 +284,6 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                     jsonObject.put("data", jsonArray);
 
                     //Making POST request
-                    URL url = new URL(SERVER_URL);
                     HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
                     httpURLConnection.setDoOutput(true);
                     httpURLConnection.setRequestMethod("POST");
@@ -315,12 +321,12 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                         LifestylePercentageManager.saveDailyPercentages(context, previousPredictionEntity);
                     }
 
-
                     previousPredictionEntity = predictionEntity;
+
                 } catch (ConnectException e) {
                     IS_SERVER_REACHABLE = false;
                     values.clear();
-                } catch (IOException | JSONException e) {
+                } catch (IOException | JSONException | InterruptedException e) {
                     e.printStackTrace();
                     values.clear();
                 }
@@ -684,5 +690,59 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     public boolean stopService(Intent name) {
         isRunning = false;
         return super.stopService(name);
+    }
+
+    /**
+     * @return true if server is reachable
+     */
+    private boolean isServerAvailable() {
+        try {
+            //Creating JSON body to send
+            JSONObject jsonObject = new JSONObject();
+            JSONArray jsonArray = new JSONArray();
+            JSONArray readingsArray = new JSONArray();
+            for (int i = 0; i < 200; i++) {
+                JSONArray temp = new JSONArray();
+                temp.put(0, 0.0);
+                temp.put(1, 0.0);
+                temp.put(2, 0.0);
+                readingsArray.put(temp);
+            }
+            jsonArray.put(readingsArray);
+            jsonObject.put("data", jsonArray);
+
+            //Making POST request
+            URL url = new URL(PhoneLifestyleService.SERVER_URL);
+            HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+            httpURLConnection.setDoOutput(true);
+            httpURLConnection.setRequestMethod("POST");
+            httpURLConnection.setRequestProperty("Content-Type", "application/json");
+            httpURLConnection.setConnectTimeout(1000);
+            httpURLConnection.connect();
+
+            DataOutputStream wr = new DataOutputStream(httpURLConnection.getOutputStream());
+            wr.writeBytes(jsonObject.toString());
+            wr.flush();
+            wr.close();
+
+            //Getting Response
+            InputStream response = httpURLConnection.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(response));
+            StringBuilder stringBuilder = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                stringBuilder.append(line).append("\n");
+            }
+
+            if (!stringBuilder.toString().isEmpty()) {
+                return true;
+            }
+
+
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+        }
+
+        return false;
     }
 }

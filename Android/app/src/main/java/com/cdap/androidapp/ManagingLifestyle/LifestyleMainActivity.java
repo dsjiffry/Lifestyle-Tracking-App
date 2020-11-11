@@ -129,16 +129,9 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
 
         while (true) {
             try {
-
                 updateUI();
-                if (!PhoneLifestyleService.isRunning) {
-                    PhoneLifestyleService.IS_SERVER_REACHABLE = isServerAvailable();
-                }
-
                 if (!PhoneLifestyleService.IS_SERVER_REACHABLE) // Server becomes unreachable
                 {
-                    context.stopService(phoneServiceIntent);
-                    PhoneLifestyleService.isRunning = false;
                     setUITextFromThreads(card_current_activity_subtext, "Server Unavailable");
                     runOnUiThread(() ->
                             card_current_activity_icon.setImageResource(R.drawable.ic_server_unavailable)
@@ -148,38 +141,24 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                         Thread.sleep(10000);
                     }
                     PhoneLifestyleService.IS_SERVER_REACHABLE = true;
-                    context.startService(phoneServiceIntent);
                     setUITextFromThreads(card_current_activity_subtext, "predicting...");
                 }
 
                 nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
-                if (isAnalysisPeriod()) {
 
 
-                    if (!PhoneLifestyleService.isRunning && !nodes.isEmpty()) {
-                        context.startService(phoneServiceIntent);
-                    }
+                if (!PhoneLifestyleService.isRunning && !nodes.isEmpty()) {
+                    context.startService(phoneServiceIntent);
+                }
 
-                    if (nodes.isEmpty()) {
-                        PhoneLifestyleService.PREDICTION = "Watch not connected";
-                        context.stopService(phoneServiceIntent);
-                        PhoneLifestyleService.isRunning = false;
-                    }
-                } else {
+                if (nodes.isEmpty()) {
+                    PhoneLifestyleService.PREDICTION = "Watch not connected";
+//                        context.stopService(phoneServiceIntent);
+//                        PhoneLifestyleService.isRunning = false;
+                }
 
-                    if (!PhoneLifestyleService.isRunning && !nodes.isEmpty()) {
-                        context.startService(phoneServiceIntent);
-                    }
-                    if (!SuggestingLifestyleImprovements.isRunning && !nodes.isEmpty()) {
-                        context.startService(suggestingImprovementsIntent);
-                    }
-                    if (nodes.isEmpty()) {
-                        context.stopService(phoneServiceIntent);
-                        PhoneLifestyleService.isRunning = false;
-                        context.stopService(suggestingImprovementsIntent);
-                        SuggestingLifestyleImprovements.isRunning = false;
-                    }
-
+                if (!isAnalysisPeriod() && !SuggestingLifestyleImprovements.isRunning) {
+                    context.startService(suggestingImprovementsIntent);
                 }
 
                 Thread.sleep(1000);
