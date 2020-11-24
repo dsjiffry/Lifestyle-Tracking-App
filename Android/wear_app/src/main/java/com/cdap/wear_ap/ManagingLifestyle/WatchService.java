@@ -117,7 +117,7 @@ public class WatchService extends Service implements Runnable, SensorEventListen
         }
         chargingMessageSent = false;
 
-        if (readings.size() < 200) {
+        if (readings.size() < 400) {
             readings.add(sensorEvent);
         } else {
             for (SensorEvent reading : readings) //can separate values by splitting #& and lines by splitting $%$%

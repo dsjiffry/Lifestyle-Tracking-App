@@ -100,11 +100,14 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
                     "We recommend moving about for a bit",
                     R.drawable.long_sitting_icon,
                     Constants.SITTING_TOO_LONG);
-            SharedPreferences.Editor editor = sharedPref.edit();
-            String suggestion = sharedPref.getString(Constants.IMPROVEMENTS, "") +
-                    ";You sit for a long time, try standing and moving about once per hour.";
-            editor.putString(Constants.IMPROVEMENTS, suggestion);
-            editor.apply();
+            String improvements = sharedPref.getString(Constants.IMPROVEMENTS, "");
+            if(!improvements.toLowerCase().contains("sit for a long time")) {
+                SharedPreferences.Editor editor = sharedPref.edit();
+                String suggestion = improvements +
+                        ";You sit for a long time, try standing and moving about once per hour.";
+                editor.putString(Constants.IMPROVEMENTS, suggestion);
+                editor.apply();
+            }
         }
 
     }
@@ -138,10 +141,13 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
                             "An adult requires at least 7 hours of sleep. You get only " + hoursOfSleep,
                             R.drawable.ic_not_enough_sleep,
                             Constants.NOT_ENOUGH_SLEEP);
-                    SharedPreferences.Editor editor = sharedPref.edit();
-                    editor.putString(Constants.IMPROVEMENTS, sharedPref.getString(Constants.IMPROVEMENTS, "")
-                            + ";You aren't getting enough sleep, An adult requires at least 7 hours of sleep per day");
-                    editor.apply();
+                    String improvements = sharedPref.getString(Constants.IMPROVEMENTS, "");
+                    if(!improvements.toLowerCase().contains("getting enough sleep")) {
+                        SharedPreferences.Editor editor = sharedPref.edit();
+                        editor.putString(Constants.IMPROVEMENTS, improvements
+                                + ";You aren't getting enough sleep, An adult requires at least 7 hours of sleep per day");
+                        editor.apply();
+                    }
                 }
                 hoursOfSleep = sleepingHours;
             }

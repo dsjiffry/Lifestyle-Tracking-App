@@ -107,6 +107,7 @@ public class LifestyleSuggestingImprovementsActivity extends AppCompatActivity i
         for (String suggestion : suggestions) {
             addSuggestion(suggestion);
         }
+        addSuggestion(""); //empty line at end
 
     }
 

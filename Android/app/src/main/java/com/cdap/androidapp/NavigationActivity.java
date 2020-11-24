@@ -16,6 +16,7 @@ import androidx.core.app.ActivityCompat;
 import com.cdap.androidapp.ManagingLifestyle.LifestyleNavigationActivity;
 import com.cdap.androidapp.ManagingLifestyle.Models.Constants;
 import com.cdap.androidapp.ManagingLifestyle.PhoneLifestyleService;
+import com.cdap.androidapp.ManagingLifestyle.SuggestingLifestyleImprovements;
 
 import java.time.LocalDate;
 
@@ -102,7 +103,17 @@ public class NavigationActivity extends AppCompatActivity implements Runnable {
         }
 
         Intent phoneServiceIntent = new Intent(context, PhoneLifestyleService.class);
+        Intent suggestingImprovementsIntent = new Intent(context, SuggestingLifestyleImprovements.class);
+
         context.startService(phoneServiceIntent);
+
+        LocalDate rightNow = LocalDate.now();
+        LocalDate analysisStartDate = LocalDate.parse(sharedPref.getString(Constants.ANALYSIS_START_DATE, ""));
+
+        if (rightNow.isAfter(analysisStartDate.plusWeeks(1))) {
+            context.startService(suggestingImprovementsIntent);
+        }
+
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -49,6 +49,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -72,7 +73,8 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     public static final String SERVER_URL = MainActivity.SERVER_BASE_URL + "/life";
     public static boolean IS_SERVER_REACHABLE = false;
 
-    private final ArrayList<Reading> values = new ArrayList<>();    // Stores 200 accelerometer readings
+    private final ArrayList<Reading> values = new ArrayList<>();    // Stores 400 accelerometer readings
+    private final ArrayList<PredictionEntity> readingsInAMinute = new ArrayList<>();
     private Context context;
     private URL url = null;
     private PredictionEntity previousPredictionEntity = null;
@@ -110,7 +112,6 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
 
     }
-
 
 
     @SuppressLint("WakelockTimeout")
@@ -189,7 +190,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
         String[] lines = message.split("(\\$%\\$%)");
         if (values.isEmpty()) {
-            for (int i = 0; i < 200; i++) {
+            for (int i = 0; i < 400; i++) {
                 Reading reading = new Reading(
                         lines[i].split("#&")[0], // x - axis
                         lines[i].split("#&")[1], // y - axis
@@ -197,10 +198,9 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                 );
                 values.add(reading);
             }
-
-            synchronized (makePredictionLock) { //making prediction via thread
-                makePredictionLock.notifyAll();
-            }
+        }
+        synchronized (makePredictionLock) { //making prediction via thread
+            makePredictionLock.notifyAll();
         }
     }
 
@@ -214,11 +214,10 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
         while (isAnalysisPeriod) {
 
             if (!isRunning) {
-                if(workplaceLocationHandler != null && workplaceLocationRunnable != null)
-                {
+                if (workplaceLocationHandler != null && workplaceLocationRunnable != null) {
                     workplaceLocationHandler.removeCallbacks(workplaceLocationRunnable);
                 }
-                if(workHoursHandler != null && workHourRunnable != null) {
+                if (workHoursHandler != null && workHourRunnable != null) {
                     workHoursHandler.removeCallbacks(workHourRunnable);
                 }
                 return;
@@ -251,15 +250,10 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                         Thread.sleep(2000);
                     }
 
-                    if (!isRunning) {
-                        return;
-                    }
-
-                    synchronized (makePredictionLock) {
-                        values.clear();
-                        makePredictionLock.wait();
-                        if (!isRunning) {
-                            return;
+                    while (values.isEmpty() || values.size() < 400) {
+                        synchronized (makePredictionLock) {
+//                        values.clear();
+                            makePredictionLock.wait();
                         }
                     }
 
@@ -272,14 +266,13 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                     JSONObject jsonObject = new JSONObject();
                     JSONArray jsonArray = new JSONArray();
                     JSONArray readingsArray = new JSONArray();
-                    for (int i = 0; i < 200; i++) {
+                    for (int i = 0; i < 400; i++) {
                         JSONArray temp = new JSONArray();
                         temp.put(0, values.get(i).xAxis);
                         temp.put(1, values.get(i).yAxis);
                         temp.put(2, values.get(i).zAxis);
                         readingsArray.put(temp);
                     }
-                    values.clear();
                     jsonArray.put(readingsArray);
                     jsonObject.put("data", jsonArray);
 
@@ -306,7 +299,6 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                     }
                     PREDICTION = stringBuilder.toString().replaceAll("\"", "").trim();
 
-                    DataBaseManager dataBaseManager = new DataBaseManager(context);
                     LocalDateTime localDateTime = LocalDateTime.now();
                     PredictionEntity predictionEntity = new PredictionEntity(
                             localDateTime.getDayOfMonth(),
@@ -316,7 +308,12 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                             localDateTime.getMinute(),
                             PREDICTION
                     );
-                    dataBaseManager.addPrediction(predictionEntity);
+
+                    readingsInAMinute.add(predictionEntity);
+                    if (previousPredictionEntity!= null && previousPredictionEntity.minute != predictionEntity.minute) {
+                        addToDatabase(previousPredictionEntity);
+                    }
+
                     if (previousPredictionEntity != null && previousPredictionEntity.day != predictionEntity.day) {
                         LifestylePercentageManager.saveDailyPercentages(context, previousPredictionEntity);
                     }
@@ -325,13 +322,52 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
                 } catch (ConnectException e) {
                     IS_SERVER_REACHABLE = false;
-                    values.clear();
                 } catch (IOException | JSONException | InterruptedException e) {
                     e.printStackTrace();
+                } finally {
                     values.clear();
                 }
             }
         })).start();
+    }
+
+    private void addToDatabase(PredictionEntity lastReading) {
+
+        int standing, sitting, walking, stairs, jogging;
+        standing = sitting = walking = stairs = jogging = 0;
+
+        for (PredictionEntity predictionEntity : readingsInAMinute) {
+            switch (predictionEntity.activity) {
+                case UserActivities.STANDING:
+                    standing++;
+                    break;
+                case UserActivities.SITTING:
+                    sitting++;
+                    break;
+                case UserActivities.WALKING:
+                    walking++;
+                    break;
+                case UserActivities.STAIRS:
+                    stairs++;
+                    break;
+                case UserActivities.JOGGING:
+                    jogging++;
+                    break;
+            }
+        }
+
+        TreeMap<Integer, String> treeMap = new TreeMap<>();
+        treeMap.put(sitting, Constants.SITTING);
+        treeMap.put(standing, Constants.STANDING);
+        treeMap.put(walking, Constants.WALKING);
+        treeMap.put(stairs, Constants.STAIRS);
+        treeMap.put(jogging, Constants.JOGGING);
+
+        lastReading.activity = treeMap.lastEntry().getValue();
+
+        DataBaseManager dataBaseManager = new DataBaseManager(context);
+        dataBaseManager.addPrediction(lastReading);
+        readingsInAMinute.clear();
     }
 
     /**
@@ -701,7 +737,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
             JSONObject jsonObject = new JSONObject();
             JSONArray jsonArray = new JSONArray();
             JSONArray readingsArray = new JSONArray();
-            for (int i = 0; i < 200; i++) {
+            for (int i = 0; i < 400; i++) {
                 JSONArray temp = new JSONArray();
                 temp.put(0, 0.0);
                 temp.put(1, 0.0);

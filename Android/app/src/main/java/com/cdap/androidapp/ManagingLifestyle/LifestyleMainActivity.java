@@ -129,7 +129,6 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
 
         while (true) {
             try {
-                updateUI();
                 if (!PhoneLifestyleService.IS_SERVER_REACHABLE) // Server becomes unreachable
                 {
                     setUITextFromThreads(card_current_activity_subtext, "Server Unavailable");
@@ -153,14 +152,13 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
 
                 if (nodes.isEmpty()) {
                     PhoneLifestyleService.PREDICTION = "Watch not connected";
-//                        context.stopService(phoneServiceIntent);
-//                        PhoneLifestyleService.isRunning = false;
                 }
 
                 if (!isAnalysisPeriod() && !SuggestingLifestyleImprovements.isRunning) {
                     context.startService(suggestingImprovementsIntent);
                 }
 
+                updateUI();
                 Thread.sleep(1000);
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
@@ -258,7 +256,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                         hour = hour - 12;
                     }
                 }
-                workHours.append("From").append(hour).append(":");
+                workHours.append("From ").append(hour).append(":");
                 if (minute < 10) {
                     workHours.append("0");
                 }
@@ -413,7 +411,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
             JSONObject jsonObject = new JSONObject();
             JSONArray jsonArray = new JSONArray();
             JSONArray readingsArray = new JSONArray();
-            for (int i = 0; i < 200; i++) {
+            for (int i = 0; i < 400; i++) {
                 JSONArray temp = new JSONArray();
                 temp.put(0, 0.0);
                 temp.put(1, 0.0);
