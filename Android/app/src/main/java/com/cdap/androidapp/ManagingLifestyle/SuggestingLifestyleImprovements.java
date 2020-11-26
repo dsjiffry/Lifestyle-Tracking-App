@@ -20,7 +20,9 @@ import com.cdap.androidapp.ManagingLifestyle.DataBase.UserActivities;
 import com.cdap.androidapp.ManagingLifestyle.Models.Constants;
 import com.cdap.androidapp.R;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
@@ -36,6 +38,9 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
     private Handler handler;
     private double hoursOfSleep = -1;
 
+    private final String standingSuggestion = "You sit for a long time, try standing and moving about once per hour.";
+    private final String sleepingSuggestion = "You aren't getting enough sleep, An adult requires at least 7 hours of sleep per day.";
+
 
     @Override
     public void onCreate() {
@@ -48,7 +53,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        if(!isRunning) {
+        if (!isRunning) {
             HandlerThread handlerThread = new HandlerThread("MyHandlerThread"); //Name the handlerThread
             handlerThread.start();
             handler = new Handler(handlerThread.getLooper());
@@ -65,7 +70,12 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
         checkTimeSeated();
         checkSleepHours();
 
-        handler.postDelayed(this, 3600000); //one hour
+        //Getting milliseconds to next hour
+        LocalDateTime rightNow = LocalDateTime.now();
+        LocalDateTime nextHour = rightNow.plusHours(1).truncatedTo(ChronoUnit.HOURS);
+        long duration = Duration.between(rightNow, nextHour).toMillis();
+
+        handler.postDelayed(this, duration); //fire at next hour
         // Stop using: handler.removeCallbacks(this);
     }
 
@@ -101,10 +111,10 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
                     R.drawable.long_sitting_icon,
                     Constants.SITTING_TOO_LONG);
             String improvements = sharedPref.getString(Constants.IMPROVEMENTS, "");
-            if(!improvements.toLowerCase().contains("sit for a long time")) {
+            if (!improvements.toLowerCase().contains("sit for a long time")) {
                 SharedPreferences.Editor editor = sharedPref.edit();
                 String suggestion = improvements +
-                        ";You sit for a long time, try standing and moving about once per hour.";
+                        ";" + standingSuggestion;
                 editor.putString(Constants.IMPROVEMENTS, suggestion);
                 editor.apply();
             }
@@ -125,11 +135,12 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
             int sleepMinute = sharedPref.getInt(Constants.SLEEP_TIME_MINUTE, -1);
             double wakeHour = sharedPref.getInt(Constants.WAKE_TIME_HOUR, -1);
             int wakeMinute = sharedPref.getInt(Constants.WAKE_TIME_MINUTE, -1);
+            LocalDateTime rightNow = LocalDateTime.now();
 
             sleepHour += ((double) sleepMinute / 60);
             wakeHour += ((double) wakeMinute / 60);
 
-            double sleepingHours = -1;
+            double sleepingHours;
             if (sleepHour > wakeHour) {
                 sleepingHours = 24 - (sleepHour - wakeHour);
             } else {
@@ -137,36 +148,38 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
             }
             if (sleepingHours <= 7.0) {
                 if (hoursOfSleep == -1) {
-                    sendANotification("You aren't getting enough sleep",
-                            "An adult requires at least 7 hours of sleep. You get only " + hoursOfSleep,
-                            R.drawable.ic_not_enough_sleep,
-                            Constants.NOT_ENOUGH_SLEEP);
                     String improvements = sharedPref.getString(Constants.IMPROVEMENTS, "");
-                    if(!improvements.toLowerCase().contains("getting enough sleep")) {
+                    if (!improvements.toLowerCase().contains("getting enough sleep")) {
                         SharedPreferences.Editor editor = sharedPref.edit();
                         editor.putString(Constants.IMPROVEMENTS, improvements
-                                + ";You aren't getting enough sleep, An adult requires at least 7 hours of sleep per day");
+                                + ";" + sleepingSuggestion);
                         editor.apply();
                     }
+                    hoursOfSleep = sleepingHours;
+                } else {
+                    int idealSleepHour = (int) wakeHour - 7;
+                    if (idealSleepHour < 0) {
+                        idealSleepHour = 24 - (idealSleepHour * (-1));
+                    }
+                    if (rightNow.getHour() == idealSleepHour) {
+                        sendANotification("Sleeping now would be better",
+                                "if you sleep now you can get the required 7 hours of sleep",
+                                R.drawable.ic_not_enough_sleep,
+                                Constants.NOT_ENOUGH_SLEEP);
+                    }
                 }
-                hoursOfSleep = sleepingHours;
+
+            } else {
+                String improvements = sharedPref.getString(Constants.IMPROVEMENTS, "");
+                if (!improvements.toLowerCase().contains("getting enough sleep")) {
+                    SharedPreferences.Editor editor = sharedPref.edit();
+                    improvements = improvements.replace(";" + sleepingSuggestion, "");
+                    editor.putString(Constants.IMPROVEMENTS, improvements);
+                    editor.apply();
+                }
             }
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     @Nullable
