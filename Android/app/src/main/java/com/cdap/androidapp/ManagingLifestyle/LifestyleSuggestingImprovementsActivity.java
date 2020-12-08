@@ -1,6 +1,7 @@
 package com.cdap.androidapp.ManagingLifestyle;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.TypedValue;
@@ -12,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 
+import com.cdap.androidapp.MainActivity;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.DataBaseManager;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.PercentageEntity;
 import com.cdap.androidapp.ManagingLifestyle.Models.Constants;
@@ -30,6 +32,7 @@ public class LifestyleSuggestingImprovementsActivity extends AppCompatActivity i
             suggestionsTopic;
     Context context;
     private DataBaseManager dataBaseManager;
+    private SharedPreferences sharedPref;
     private ConstraintLayout suggestionsCard;
     private int previousTextViewID;
 
@@ -49,10 +52,12 @@ public class LifestyleSuggestingImprovementsActivity extends AppCompatActivity i
         suggestionsCard = findViewById(R.id.suggestions_card);
         suggestionsTopic = findViewById(R.id.suggestion_topic);
         previousTextViewID = suggestionsTopic.getId();
+        sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
 
 
         Thread thread = new Thread(this);
         thread.start();
+
     }
 
     @Override
@@ -83,19 +88,26 @@ public class LifestyleSuggestingImprovementsActivity extends AppCompatActivity i
             numberOfDays++;
         }
 
-        updatePieChart(standingPercentage, sittingPercentage, walkingPercentage, stairsPercentage, joggingPercentage, numberOfDays);
+        numberOfDays = numberOfDays / 5;
 
-
-
-
-
-        if(!SuggestingLifestyleImprovements.suggestions.isEmpty())
-        {
-            for(String suggestion : SuggestingLifestyleImprovements.suggestions)
-            {
-                addSuggestion(suggestion);
-            }
+        if (numberOfDays > 0) {
+            updatePieChart(standingPercentage / numberOfDays,
+                    sittingPercentage / numberOfDays,
+                    walkingPercentage / numberOfDays,
+                    stairsPercentage / numberOfDays,
+                    joggingPercentage / numberOfDays,
+                    numberOfDays);
         }
+        else
+        {
+            emptyPieChart();
+        }
+
+        String[] suggestions = sharedPref.getString(Constants.IMPROVEMENTS, "").split(";");
+        for (String suggestion : suggestions) {
+            addSuggestion(suggestion);
+        }
+        addSuggestion(""); //empty line at end
 
     }
 
@@ -137,6 +149,43 @@ public class LifestyleSuggestingImprovementsActivity extends AppCompatActivity i
         });
     }
 
+    public void emptyPieChart() {
+        pieChart.addPieSlice(
+                new PieModel(
+                        "Standing",
+                        0,
+                        getColor(R.color.Standing)));
+        pieChart.addPieSlice(
+                new PieModel(
+                        "Sitting",
+                        0,
+                        getColor(R.color.Sitting)));
+        pieChart.addPieSlice(
+                new PieModel(
+                        "Walking",
+                        0,
+                        getColor(R.color.Walking)));
+        pieChart.addPieSlice(
+                new PieModel(
+                        "Stairs",
+                        0,
+                        getColor(R.color.Stairs)));
+        pieChart.addPieSlice(
+                new PieModel(
+                        "Jogging",
+                        0,
+                        getColor(R.color.Jogging)));
+        runOnUiThread(() -> {
+            pieChart.startAnimation();
+
+            chartStanding.setText("Standing (" + 0 + "%)");
+            chartSitting.setText("Sitting (" + 0 + "%)");
+            chartWalking.setText("Walking (" + 0 + "%)");
+            chartStairs.setText("Stairs (" + 0 + "%)");
+            chartJogging.setText("Jogging (" + 0 + "%)");
+            chartNoOfDays.setText("Number of days: " + 0);
+        });
+    }
 
     public void addSuggestion(String message) {
         TextView textView = new TextView(context);
@@ -148,10 +197,10 @@ public class LifestyleSuggestingImprovementsActivity extends AppCompatActivity i
         textView.setText(message);
 
         suggestionsCard.addView(textView);
-        ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(ConstraintLayout.LayoutParams.MATCH_PARENT, 150);
-        params.setMargins(8,8,8,8);
-        textView.setLayoutParams(params);
 
+        ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(ConstraintLayout.LayoutParams.MATCH_PARENT, 150);
+        params.setMargins(8, 8, 8, 8);
+        textView.setLayoutParams(params);
 
 
         ConstraintSet constraintSet = new ConstraintSet();

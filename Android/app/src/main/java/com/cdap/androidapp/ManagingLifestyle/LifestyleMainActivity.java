@@ -120,16 +120,6 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
     @Override
     public void run() {
 
-        SharedPreferences sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
-
-        //Will be taking one week to analyze user's current lifestyle
-        if (!sharedPref.contains(Constants.IS_ANALYZING_PERIOD) || !sharedPref.contains(Constants.ANALYSIS_START_DATE)) {
-            SharedPreferences.Editor editor = sharedPref.edit();
-            editor.putBoolean(Constants.IS_ANALYZING_PERIOD, true);
-            editor.putString(Constants.ANALYSIS_START_DATE, LocalDate.now().toString());
-            editor.apply();
-        }
-
         Intent phoneServiceIntent = new Intent(context, PhoneLifestyleService.class);
         Intent suggestingImprovementsIntent = new Intent(context, SuggestingLifestyleImprovements.class);
         List<Node> nodes;
@@ -139,55 +129,36 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
 
         while (true) {
             try {
-
-                updateUI();
-                if (!PhoneLifestyleService.isRunning) {
-                    PhoneLifestyleService.IS_SERVER_REACHABLE = isServerAvailable();
-                }
-
                 if (!PhoneLifestyleService.IS_SERVER_REACHABLE) // Server becomes unreachable
                 {
-                    context.stopService(phoneServiceIntent);
                     setUITextFromThreads(card_current_activity_subtext, "Server Unavailable");
                     runOnUiThread(() ->
                             card_current_activity_icon.setImageResource(R.drawable.ic_server_unavailable)
                     );
-                    while (!isServerAvailable()) //Wait till server is available
+                    while (!isServerAvailable()) // Wait till server is available
                     {
                         Thread.sleep(10000);
                     }
                     PhoneLifestyleService.IS_SERVER_REACHABLE = true;
-                    context.startService(phoneServiceIntent);
                     setUITextFromThreads(card_current_activity_subtext, "predicting...");
                 }
 
                 nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
-                if (isAnalysisPeriod()) {
 
 
-                    if (!PhoneLifestyleService.isRunning && !nodes.isEmpty()) {
-                        context.startService(phoneServiceIntent);
-                    }
-
-                    if (nodes.isEmpty()) {
-                        PhoneLifestyleService.PREDICTION = "Watch not connected";
-                        context.stopService(phoneServiceIntent);
-                    }
-                } else {
-
-                    if (!PhoneLifestyleService.isRunning && !nodes.isEmpty()) {
-                        context.startService(phoneServiceIntent);
-                    }
-                    if (!SuggestingLifestyleImprovements.isRunning && !nodes.isEmpty()) {
-                        context.startService(suggestingImprovementsIntent);
-                    }
-                    if (nodes.isEmpty()) {
-                        context.stopService(phoneServiceIntent);
-                        context.stopService(suggestingImprovementsIntent);
-                    }
-
+                if (!PhoneLifestyleService.isRunning && !nodes.isEmpty()) {
+                    context.startService(phoneServiceIntent);
                 }
 
+                if (nodes.isEmpty()) {
+                    PhoneLifestyleService.PREDICTION = "Watch not connected";
+                }
+
+                if (!isAnalysisPeriod() && !SuggestingLifestyleImprovements.isRunning) {
+                    context.startService(suggestingImprovementsIntent);
+                }
+
+                updateUI();
                 Thread.sleep(1000);
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
@@ -285,7 +256,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
                         hour = hour - 12;
                     }
                 }
-                workHours.append("From").append(hour).append(":");
+                workHours.append("From ").append(hour).append(":");
                 if (minute < 10) {
                     workHours.append("0");
                 }
@@ -440,7 +411,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
             JSONObject jsonObject = new JSONObject();
             JSONArray jsonArray = new JSONArray();
             JSONArray readingsArray = new JSONArray();
-            for (int i = 0; i < 200; i++) {
+            for (int i = 0; i < 400; i++) {
                 JSONArray temp = new JSONArray();
                 temp.put(0, 0.0);
                 temp.put(1, 0.0);
@@ -508,5 +479,6 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         Intent intent = new Intent(LifestyleMainActivity.this, MainActivity.class);
         this.startActivity(intent);
     }
+
 
 }

@@ -49,6 +49,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -58,7 +59,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * sleep time
  * home location
  * workplace location
- *
  * work hours
  * exercise time
  * exercise type
@@ -68,23 +68,26 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
 
     public static volatile String PREDICTION = "predicting...";
-    public static Boolean isRunning = false;    // Used to check if service is already running
+    public static volatile Boolean isRunning = false;    // Used to check if service is already running
     public static Boolean isAnalysisPeriod = true;    // Used to check if we are still in analysis week
-    public final static String SERVER_URL = MainActivity.SERVER_BASE_URL + "/life";
+    public static final String SERVER_URL = MainActivity.SERVER_BASE_URL + "/life";
     public static boolean IS_SERVER_REACHABLE = false;
 
-    private final ArrayList<Reading> values = new ArrayList<>();    // Stores 200 accelerometer readings
+    private final ArrayList<Reading> values = new ArrayList<>();    // Stores 400 accelerometer readings
+    private final ArrayList<PredictionEntity> readingsInAMinute = new ArrayList<>();
     private Context context;
     private URL url = null;
     private PredictionEntity previousPredictionEntity = null;
     private PowerManager.WakeLock wakeLock = null;
+    private Thread thread = null;
     private boolean isCharging = false;
     private boolean isUnlocked = false;
     private SharedPreferences sharedPref;
-    private ArrayList<Double> workLongitude;
-    private ArrayList<Double> workLatitude;
     private IntentFilter intentFilter;
     private BroadcastReceiver broadcastReceiver;
+    private Runnable workplaceLocationRunnable, workHourRunnable;
+    private Handler workplaceLocationHandler, workHoursHandler;
+
 
     private final Object makePredictionLock = new Object();
 
@@ -92,9 +95,6 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     public void onCreate() {
         super.onCreate();
         context = getApplicationContext();
-        workLongitude = new ArrayList<>();
-        workLatitude = new ArrayList<>();
-
         sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
         intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
@@ -113,10 +113,11 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
     }
 
+
     @SuppressLint("WakelockTimeout")
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if(!isRunning) {
+        if (thread == null || !thread.isAlive()) {
             isRunning = true;
             IS_SERVER_REACHABLE = true;
             NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "phoneService")
@@ -137,7 +138,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
             wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, PhoneLifestyleService.class.getSimpleName());
             wakeLock.acquire();
 
-            Thread thread = new Thread(this);
+            thread = new Thread(this);
             thread.start();
         }
         return Service.START_STICKY;
@@ -189,7 +190,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
         String[] lines = message.split("(\\$%\\$%)");
         if (values.isEmpty()) {
-            for (int i = 0; i < 200; i++) {
+            for (int i = 0; i < 400; i++) {
                 Reading reading = new Reading(
                         lines[i].split("#&")[0], // x - axis
                         lines[i].split("#&")[1], // y - axis
@@ -197,10 +198,9 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                 );
                 values.add(reading);
             }
-
-            synchronized (makePredictionLock) { //making prediction via thread
-                makePredictionLock.notifyAll();
-            }
+        }
+        synchronized (makePredictionLock) { //making prediction via thread
+            makePredictionLock.notifyAll();
         }
     }
 
@@ -208,10 +208,20 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     @Override
     public void run() {
         sendPostMessage(); //Starting up the thread
-        determineWorkHours(); //runs in separate thread
         determineWorkplaceLocation(); //runs in separate thread
+        determineWorkHours(); //runs in separate thread
 
         while (isAnalysisPeriod) {
+
+            if (!isRunning) {
+                if (workplaceLocationHandler != null && workplaceLocationRunnable != null) {
+                    workplaceLocationHandler.removeCallbacks(workplaceLocationRunnable);
+                }
+                if (workHoursHandler != null && workHourRunnable != null) {
+                    workHoursHandler.removeCallbacks(workHourRunnable);
+                }
+                return;
+            }
 
             checkEndOfAnalysisPeriod();
             determineWorkplaceTravelMethod();
@@ -234,15 +244,20 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
         (new Thread(() -> {
             while (true) {
                 try {
-                    synchronized (makePredictionLock) {
-                        makePredictionLock.wait();
+
+                    while (!IS_SERVER_REACHABLE) {
+                        IS_SERVER_REACHABLE = isServerAvailable();
+                        Thread.sleep(2000);
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+
+                    while (values.isEmpty() || values.size() < 400) {
+                        synchronized (makePredictionLock) {
+//                        values.clear();
+                            makePredictionLock.wait();
+                        }
+                    }
 
 
-                try {
                     if (url == null) {
                         url = new URL(SERVER_URL);
                     }
@@ -251,19 +266,17 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                     JSONObject jsonObject = new JSONObject();
                     JSONArray jsonArray = new JSONArray();
                     JSONArray readingsArray = new JSONArray();
-                    for (int i = 0; i < 200; i++) {
+                    for (int i = 0; i < 400; i++) {
                         JSONArray temp = new JSONArray();
                         temp.put(0, values.get(i).xAxis);
                         temp.put(1, values.get(i).yAxis);
                         temp.put(2, values.get(i).zAxis);
                         readingsArray.put(temp);
                     }
-                    values.clear();
                     jsonArray.put(readingsArray);
                     jsonObject.put("data", jsonArray);
 
                     //Making POST request
-                    URL url = new URL(SERVER_URL);
                     HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
                     httpURLConnection.setDoOutput(true);
                     httpURLConnection.setRequestMethod("POST");
@@ -286,7 +299,6 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                     }
                     PREDICTION = stringBuilder.toString().replaceAll("\"", "").trim();
 
-                    DataBaseManager dataBaseManager = new DataBaseManager(context);
                     LocalDateTime localDateTime = LocalDateTime.now();
                     PredictionEntity predictionEntity = new PredictionEntity(
                             localDateTime.getDayOfMonth(),
@@ -296,20 +308,66 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                             localDateTime.getMinute(),
                             PREDICTION
                     );
-                    dataBaseManager.addPrediction(predictionEntity);
+
+                    readingsInAMinute.add(predictionEntity);
+                    if (previousPredictionEntity!= null && previousPredictionEntity.minute != predictionEntity.minute) {
+                        addToDatabase(previousPredictionEntity);
+                    }
+
                     if (previousPredictionEntity != null && previousPredictionEntity.day != predictionEntity.day) {
                         LifestylePercentageManager.saveDailyPercentages(context, previousPredictionEntity);
                     }
 
-
                     previousPredictionEntity = predictionEntity;
+
                 } catch (ConnectException e) {
                     IS_SERVER_REACHABLE = false;
-                } catch (IOException | JSONException e) {
+                } catch (IOException | JSONException | InterruptedException e) {
                     e.printStackTrace();
+                } finally {
+                    values.clear();
                 }
             }
         })).start();
+    }
+
+    private void addToDatabase(PredictionEntity lastReading) {
+
+        int standing, sitting, walking, stairs, jogging;
+        standing = sitting = walking = stairs = jogging = 0;
+
+        for (PredictionEntity predictionEntity : readingsInAMinute) {
+            switch (predictionEntity.activity) {
+                case UserActivities.STANDING:
+                    standing++;
+                    break;
+                case UserActivities.SITTING:
+                    sitting++;
+                    break;
+                case UserActivities.WALKING:
+                    walking++;
+                    break;
+                case UserActivities.STAIRS:
+                    stairs++;
+                    break;
+                case UserActivities.JOGGING:
+                    jogging++;
+                    break;
+            }
+        }
+
+        TreeMap<Integer, String> treeMap = new TreeMap<>();
+        treeMap.put(sitting, Constants.SITTING);
+        treeMap.put(standing, Constants.STANDING);
+        treeMap.put(walking, Constants.WALKING);
+        treeMap.put(stairs, Constants.STAIRS);
+        treeMap.put(jogging, Constants.JOGGING);
+
+        lastReading.activity = treeMap.lastEntry().getValue();
+
+        DataBaseManager dataBaseManager = new DataBaseManager(context);
+        dataBaseManager.addPrediction(lastReading);
+        readingsInAMinute.clear();
     }
 
     /**
@@ -452,15 +510,18 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     private void determineWorkplaceLocation() {
         HandlerThread handlerThread = new HandlerThread("determineWorkplaceLocationThread"); //Name the handlerThread
         handlerThread.start();
-        Handler localHandler = new Handler(handlerThread.getLooper());
-        Runnable localRunnable = new Runnable() {
+        ArrayList<Double> workLongitude = new ArrayList<>();
+        ArrayList<Double> workLatitude = new ArrayList<>();
+        workplaceLocationHandler = new Handler(handlerThread.getLooper());
+        workplaceLocationRunnable = new Runnable() {
             public void run() {
-                if (!isAnalysisPeriod) {
-                    localHandler.removeCallbacks(this);
+                if (!isAnalysisPeriod || !isRunning) {
+                    workplaceLocationHandler.removeCallbacks(this);
                     return;
                 }
                 LocalDateTime rightNow = LocalDateTime.now();
                 if (rightNow.getDayOfWeek() != DayOfWeek.SATURDAY && rightNow.getDayOfWeek() != DayOfWeek.SUNDAY) {
+
 
                     if (rightNow.getHour() >= 11 && rightNow.getHour() <= 15) //in between 11am and 3pm
                     {
@@ -468,8 +529,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                         workLongitude.add(currentLocation.getLongitude());
                         workLatitude.add(currentLocation.getLongitude());
 
-                        localHandler.postDelayed(this, 3600000); //Once per hour
-//                        Toast.makeText(context, "ONE Hour", Toast.LENGTH_LONG).show();
+                        //Toast.makeText(context, "ONE Hour", Toast.LENGTH_LONG).show();
 
                     } else {
                         if (!workLatitude.isEmpty() && !workLongitude.isEmpty()) {
@@ -481,15 +541,16 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                             editor.apply();
                         }
                     }
+                    workplaceLocationHandler.postDelayed(this, 3600000); //Once per hour
 
 
                 } else {
                     long duration = (24 - rightNow.getHour()) * 3600000; //Time to next midnight in milliseconds
-                    localHandler.postDelayed(this, duration); //To stop use: handler.removeCallbacks(runnable);
+                    workplaceLocationHandler.postDelayed(this, duration); //To stop use: handler.removeCallbacks(workplaceLocationRunnable);
                 }
             }
         };
-        localHandler.post(localRunnable); // Start thread immediately
+        workplaceLocationHandler.post(workplaceLocationRunnable); // Start thread immediately
 
     }
 
@@ -501,25 +562,24 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
             return;
         }
 
-        //Detecting how user goes to work
-        if (!sharedPref.contains(Constants.WORK_TRAVEL_METHOD)) {
-            SharedPreferences.Editor editor = sharedPref.edit();
-            editor.putString(Constants.WORK_TRAVEL_METHOD, Constants.WALKING);
-            editor.apply();
+        if (sharedPref.getString(Constants.WORK_TRAVEL_METHOD, "").equalsIgnoreCase(Constants.VEHICLE)) {
+            return;
         }
+
 
         int wakeHour = sharedPref.getInt(Constants.WAKE_TIME_HOUR, -1);
         int atWorkHour = sharedPref.getInt(Constants.WORK_START_TIME_HOUR, -1);
         if (wakeHour >= 0 && atWorkHour >= 0) {
             LocalDateTime rightNow = LocalDateTime.now();
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putString(Constants.WORK_TRAVEL_METHOD, Constants.WALKING);
             if (rightNow.getHour() > wakeHour && rightNow.getHour() < atWorkHour) {
-                if (getCurrentLocation().getSpeed() > 3.0f) // 3 m/s = 10.8 km/h
+                if (getCurrentLocation().getSpeed() > 11.0f) // 11 m/s = 40 km/h
                 {
-                    SharedPreferences.Editor editor = sharedPref.edit();
                     editor.putString(Constants.WORK_TRAVEL_METHOD, Constants.VEHICLE);
-                    editor.apply();
                 }
             }
+            editor.apply();
         }
     }
 
@@ -529,17 +589,18 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     private void determineWorkHours() {
         HandlerThread handlerThread = new HandlerThread("determineWorkHoursThread"); //Name the handlerThread
         handlerThread.start();
-        Handler localHandler = new Handler(handlerThread.getLooper());
+        workHoursHandler = new Handler(handlerThread.getLooper());
 
         final AtomicBoolean isAtWork = new AtomicBoolean(false);
-        Runnable localRunnable = new Runnable() {
+        workHourRunnable = new Runnable() {
             public void run() {
-                if (!isAnalysisPeriod) {
-                    localHandler.removeCallbacks(this);
+                if (!isAnalysisPeriod || !isRunning) {
+                    workHoursHandler.removeCallbacks(this);
                     return;
                 }
 
-                if (!sharedPref.contains(Constants.WORK_LATITUDE) && !sharedPref.contains(Constants.WORK_LONGITUDE)) { //Should not happen
+                if (!sharedPref.contains(Constants.WORK_LATITUDE) && !sharedPref.contains(Constants.WORK_LONGITUDE)) {
+                    workHoursHandler.postDelayed(this, 18000000); // 5 hours
                     return;
                 }
 
@@ -568,7 +629,8 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                         editor.apply();
                         isAtWork.set(true);
                     } else {
-                        localHandler.postDelayed(this, 600000); // 10 minutes
+                        workHoursHandler.postDelayed(this, 600000); // 10 minutes
+                        return;
                         //To stop use: handler.removeCallbacks(runnable);
                     }
                 } else {///////////////////////////////////// Getting Time user leaves Workplace /////////////////////////////////////////////
@@ -593,17 +655,24 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                         editor.apply();
                         isAtWork.set(false);
                     } else {
-                        localHandler.postDelayed(this, 600000); // 10 minutes
+                        workHoursHandler.postDelayed(this, 600000); // 10 minutes
+                        return;
                         //To stop use: handler.removeCallbacks(runnable);
                     }
                 }
-                if(isAnalysisPeriod) {
-                    localHandler.postDelayed(this, 18000000); // 5 hours
+                if (isAnalysisPeriod) {
+                    workHoursHandler.postDelayed(this, 18000000); // 5 hours
                 }
             }
         };
-        localHandler.post(localRunnable); // Start thread immediately
+        workHoursHandler.post(workHourRunnable); // Start thread immediately
     }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
     /**
      * Once the week of analyzing is over we need to start the {@link SuggestingLifestyleImprovements} service
@@ -643,7 +712,6 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
         return currentLocation;
     }
 
-
     @Override
     public void onDestroy() {
         if (wakeLock != null && wakeLock.isHeld()) {
@@ -658,5 +726,59 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     public boolean stopService(Intent name) {
         isRunning = false;
         return super.stopService(name);
+    }
+
+    /**
+     * @return true if server is reachable
+     */
+    private boolean isServerAvailable() {
+        try {
+            //Creating JSON body to send
+            JSONObject jsonObject = new JSONObject();
+            JSONArray jsonArray = new JSONArray();
+            JSONArray readingsArray = new JSONArray();
+            for (int i = 0; i < 400; i++) {
+                JSONArray temp = new JSONArray();
+                temp.put(0, 0.0);
+                temp.put(1, 0.0);
+                temp.put(2, 0.0);
+                readingsArray.put(temp);
+            }
+            jsonArray.put(readingsArray);
+            jsonObject.put("data", jsonArray);
+
+            //Making POST request
+            URL url = new URL(PhoneLifestyleService.SERVER_URL);
+            HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+            httpURLConnection.setDoOutput(true);
+            httpURLConnection.setRequestMethod("POST");
+            httpURLConnection.setRequestProperty("Content-Type", "application/json");
+            httpURLConnection.setConnectTimeout(1000);
+            httpURLConnection.connect();
+
+            DataOutputStream wr = new DataOutputStream(httpURLConnection.getOutputStream());
+            wr.writeBytes(jsonObject.toString());
+            wr.flush();
+            wr.close();
+
+            //Getting Response
+            InputStream response = httpURLConnection.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(response));
+            StringBuilder stringBuilder = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                stringBuilder.append(line).append("\n");
+            }
+
+            if (!stringBuilder.toString().isEmpty()) {
+                return true;
+            }
+
+
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+        }
+
+        return false;
     }
 }

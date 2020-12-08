@@ -21,7 +21,6 @@ import com.cdap.androidapp.ManagingLifestyle.Models.Constants;
 import com.cdap.androidapp.R;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -30,8 +29,7 @@ import java.util.List;
  */
 public class SuggestingLifestyleImprovements extends Service implements Runnable {
 
-    public static Boolean isRunning = false;    //Used to check if service is already running
-    public static ArrayList<String> suggestions = new ArrayList<>();
+    public static volatile Boolean isRunning = false;    //Used to check if service is already running
     private Context context;
     private SharedPreferences sharedPref;
     private DataBaseManager dataBaseManager;
@@ -50,11 +48,13 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        HandlerThread handlerThread = new HandlerThread("MyHandlerThread"); //Name the handlerThread
-        handlerThread.start();
-        handler = new Handler(handlerThread.getLooper());
-        handler.post(this); // Start thread immediately
-        isRunning = true;
+        if(!isRunning) {
+            HandlerThread handlerThread = new HandlerThread("MyHandlerThread"); //Name the handlerThread
+            handlerThread.start();
+            handler = new Handler(handlerThread.getLooper());
+            handler.post(this); // Start thread immediately
+            isRunning = true;
+        }
 
         return Service.START_STICKY;
     }
@@ -100,7 +100,14 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
                     "We recommend moving about for a bit",
                     R.drawable.long_sitting_icon,
                     Constants.SITTING_TOO_LONG);
-            suggestions.add("sitting too long");
+            String improvements = sharedPref.getString(Constants.IMPROVEMENTS, "");
+            if(!improvements.toLowerCase().contains("sit for a long time")) {
+                SharedPreferences.Editor editor = sharedPref.edit();
+                String suggestion = improvements +
+                        ";You sit for a long time, try standing and moving about once per hour.";
+                editor.putString(Constants.IMPROVEMENTS, suggestion);
+                editor.apply();
+            }
         }
 
     }
@@ -134,7 +141,13 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
                             "An adult requires at least 7 hours of sleep. You get only " + hoursOfSleep,
                             R.drawable.ic_not_enough_sleep,
                             Constants.NOT_ENOUGH_SLEEP);
-                    suggestions.add("not enough sleep");
+                    String improvements = sharedPref.getString(Constants.IMPROVEMENTS, "");
+                    if(!improvements.toLowerCase().contains("getting enough sleep")) {
+                        SharedPreferences.Editor editor = sharedPref.edit();
+                        editor.putString(Constants.IMPROVEMENTS, improvements
+                                + ";You aren't getting enough sleep, An adult requires at least 7 hours of sleep per day");
+                        editor.apply();
+                    }
                 }
                 hoursOfSleep = sleepingHours;
             }
@@ -177,6 +190,12 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
 
         // notificationId is a unique int for each notification that you must define
         notificationManager.notify(notificationId, builder.build());
+    }
+
+    @Override
+    public boolean stopService(Intent name) {
+        isRunning = false;
+        return super.stopService(name);
     }
 
 }
