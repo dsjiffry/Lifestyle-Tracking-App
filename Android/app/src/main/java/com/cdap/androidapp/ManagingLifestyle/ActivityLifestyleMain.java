@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
-public class LifestyleMainActivity extends AppCompatActivity implements Runnable {
+public class ActivityLifestyleMain extends AppCompatActivity implements Runnable {
 
     private Context context;
     private SharedPreferences sharedPref;
@@ -476,7 +476,7 @@ public class LifestyleMainActivity extends AppCompatActivity implements Runnable
         editor.remove(MainActivity.PREFERENCES_USERS_HEIGHT);
         editor.apply();
 
-        Intent intent = new Intent(LifestyleMainActivity.this, MainActivity.class);
+        Intent intent = new Intent(ActivityLifestyleMain.this, MainActivity.class);
         this.startActivity(intent);
     }
 

@@ -1,11 +1,14 @@
 package com.cdap.androidapp.ManagingLifestyle;
 
+import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -37,6 +40,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
     private DataBaseManager dataBaseManager;
     private Handler handler;
     private double hoursOfSleep = -1;
+    private LocalDateTime meditatingTime;
 
     private final String standingSuggestion = "You sit for a long time, try standing and moving about once per hour.";
     private final String sleepingSuggestion = "You aren't getting enough sleep, An adult requires at least 7 hours of sleep per day.";
@@ -69,6 +73,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
     public void run() {
         checkTimeSeated();
         checkSleepHours();
+        identifyMeditatingTime();
 
         //Getting milliseconds to next hour
         LocalDateTime rightNow = LocalDateTime.now();
@@ -182,6 +187,82 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
     }
 
 
+    /**
+     * Will try to identify a good time for the user to meditate.
+     * Will check of they are at home, before sending notification
+     *
+     * https://www.mayoclinic.org/tests-procedures/meditation/in-depth/meditation/art-20045858
+     */
+    public void identifyMeditatingTime()
+    {
+        if (!sharedPref.contains(Constants.HOME_LONGITUDE) && !sharedPref.contains(Constants.HOME_LATITUDE) &&
+            !sharedPref.contains(Constants.WAKE_TIME_HOUR) && !sharedPref.contains(Constants.SLEEP_TIME_HOUR)) {
+            return;
+        }
+
+        LocalDateTime rightNow = LocalDateTime.now();
+        if(meditatingTime != null)
+        {
+            if(rightNow.getHour() == meditatingTime.getHour())
+            {
+                sendANotification("Try Meditating",
+                        "Meditating can help reduce stress.",
+                        R.drawable.ic_meditating,
+                        Constants.MEDITATING);
+                return;
+            }
+        }
+
+        int wakeHour = sharedPref.getInt(Constants.WAKE_TIME_HOUR,-1);
+        int sleepHour = sharedPref.getInt(Constants.SLEEP_TIME_HOUR,-1);
+
+        if(rightNow.getHour() < wakeHour && rightNow.getHour() > sleepHour)
+        {
+            return;
+        }
+
+        double currentLatitude = getCurrentLocation().getLatitude();
+        double currentLongitude = getCurrentLocation().getLongitude();
+        double homeLatitude = Double.parseDouble(sharedPref.getString(Constants.HOME_LATITUDE, ""));
+        double homeLongitude = Double.parseDouble(sharedPref.getString(Constants.HOME_LONGITUDE, ""));
+
+        if(currentLatitude >= homeLatitude - 0.5 && currentLatitude <= homeLatitude + 0.5 &&
+            currentLongitude >= homeLongitude - 0.5 && currentLongitude <= homeLongitude + 0.5)
+        {
+            //Getting predictions of the last hour
+            List<PredictionEntity> predictions = dataBaseManager.getAllPredictions(rightNow.getHour()-1, rightNow.getDayOfMonth(), rightNow.getMonthValue(), rightNow.getYear());
+
+            int sitting = 0;
+            for (PredictionEntity prediction : predictions) {
+                if (prediction.activity.equalsIgnoreCase(UserActivities.SITTING)) {
+                    sitting++;
+                }
+            }
+
+            double percentage = ((double) sitting / predictions.size());
+            if (percentage > 0.85)
+            {
+                sendANotification("Try Meditating",
+                        "Meditating can help reduce stress.",
+                        R.drawable.ic_meditating,
+                        Constants.MEDITATING);
+                meditatingTime = LocalDateTime.now();
+            }
+
+        }
+
+
+
+    }
+
+
+
+
+
+
+
+
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -209,6 +290,28 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
     public boolean stopService(Intent name) {
         isRunning = false;
         return super.stopService(name);
+    }
+
+    /**
+     * Getting current location
+     *
+     * @return current location
+     */
+    @SuppressLint("MissingPermission") //Handled at start of LifestyleMainActivity
+    private Location getCurrentLocation() {
+        Location currentLocation = null;
+        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        List<String> providers = locationManager.getProviders(true);
+        for (String provider : providers) {
+            Location location = locationManager.getLastKnownLocation(provider);
+            if (location == null) {
+                continue;
+            }
+            if (currentLocation == null || location.getAccuracy() < currentLocation.getAccuracy()) { //Going for option with most accuracy
+                currentLocation = location;
+            }
+        }
+        return currentLocation;
     }
 
 }

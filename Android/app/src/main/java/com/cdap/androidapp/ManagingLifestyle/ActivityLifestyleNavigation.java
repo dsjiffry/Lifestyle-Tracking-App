@@ -10,7 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.cdap.androidapp.R;
 
-public class LifestyleNavigationActivity extends AppCompatActivity {
+public class ActivityLifestyleNavigation extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,13 +31,13 @@ public class LifestyleNavigationActivity extends AppCompatActivity {
 
     public void openLifestyleTracking(View v)
     {
-        Intent intent = new Intent(LifestyleNavigationActivity.this, LifestyleMainActivity.class);
+        Intent intent = new Intent(ActivityLifestyleNavigation.this, ActivityLifestyleMain.class);
         this.startActivity(intent);
     }
 
     public void openSuggestingImprovements(View v)
     {
-        Intent intent = new Intent(LifestyleNavigationActivity.this, LifestyleSuggestingImprovementsActivity.class);
+        Intent intent = new Intent(ActivityLifestyleNavigation.this, ActivityLifestyleSuggestingImprovements.class);
         this.startActivity(intent);
     }
 

@@ -13,7 +13,7 @@ import android.view.WindowManager;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
-import com.cdap.androidapp.ManagingLifestyle.LifestyleNavigationActivity;
+import com.cdap.androidapp.ManagingLifestyle.ActivityLifestyleNavigation;
 import com.cdap.androidapp.ManagingLifestyle.Models.Constants;
 import com.cdap.androidapp.ManagingLifestyle.PhoneLifestyleService;
 import com.cdap.androidapp.ManagingLifestyle.SuggestingLifestyleImprovements;
@@ -53,7 +53,7 @@ public class NavigationActivity extends AppCompatActivity implements Runnable {
     }
 
     public void toLifestyleSection(View view) {
-        Intent intent = new Intent(NavigationActivity.this, LifestyleNavigationActivity.class);
+        Intent intent = new Intent(NavigationActivity.this, ActivityLifestyleNavigation.class);
 //        intent.putExtra("key", value);
         this.startActivity(intent);
     }

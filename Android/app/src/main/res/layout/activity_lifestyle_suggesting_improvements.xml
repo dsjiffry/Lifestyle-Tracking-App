@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/lifestyle_background"
     android:orientation="vertical"
-    tools:context="com.cdap.androidapp.ManagingLifestyle.LifestyleMainActivity">
+    tools:context="com.cdap.androidapp.ManagingLifestyle.ActivityLifestyleMain">
 
     <ScrollView
         android:id="@+id/scrollView"

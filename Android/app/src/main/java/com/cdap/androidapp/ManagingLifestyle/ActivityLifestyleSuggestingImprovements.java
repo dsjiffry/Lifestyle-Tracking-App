@@ -24,7 +24,7 @@ import org.eazegraph.lib.models.PieModel;
 
 import java.util.List;
 
-public class LifestyleSuggestingImprovementsActivity extends AppCompatActivity implements Runnable {
+public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity implements Runnable {
 
     private PieChart pieChart;
     TextView chartStanding, chartSitting, chartWalking,
