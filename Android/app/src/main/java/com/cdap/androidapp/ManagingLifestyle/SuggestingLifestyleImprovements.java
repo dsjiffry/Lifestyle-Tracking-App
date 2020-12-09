@@ -226,8 +226,9 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
         double homeLatitude = Double.parseDouble(sharedPref.getString(Constants.HOME_LATITUDE, ""));
         double homeLongitude = Double.parseDouble(sharedPref.getString(Constants.HOME_LONGITUDE, ""));
 
-        if(currentLatitude >= homeLatitude - 0.5 && currentLatitude <= homeLatitude + 0.5 &&
-            currentLongitude >= homeLongitude - 0.5 && currentLongitude <= homeLongitude + 0.5)
+        // Allowing Error margin of 0.0005
+        if(currentLatitude >= homeLatitude - 0.0005 && currentLatitude <= homeLatitude + 0.0005 &&
+            currentLongitude >= homeLongitude - 0.0005 && currentLongitude <= homeLongitude + 0.0005)
         {
             //Getting predictions of the last hour
             List<PredictionEntity> predictions = dataBaseManager.getAllPredictions(rightNow.getHour()-1, rightNow.getDayOfMonth(), rightNow.getMonthValue(), rightNow.getYear());
@@ -297,7 +298,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
      *
      * @return current location
      */
-    @SuppressLint("MissingPermission") //Handled at start of LifestyleMainActivity
+    @SuppressLint("MissingPermission") //Handled at start of ActivityLifestyleMain
     private Location getCurrentLocation() {
         Location currentLocation = null;
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);

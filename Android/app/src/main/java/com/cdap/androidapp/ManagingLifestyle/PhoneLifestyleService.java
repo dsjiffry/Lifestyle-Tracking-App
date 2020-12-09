@@ -695,7 +695,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
      *
      * @return current location
      */
-    @SuppressLint("MissingPermission") //Handled at start of LifestyleMainActivity
+    @SuppressLint("MissingPermission") //Handled at start of ActivityLifestyleMain
     private Location getCurrentLocation() {
         Location currentLocation = null;
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
