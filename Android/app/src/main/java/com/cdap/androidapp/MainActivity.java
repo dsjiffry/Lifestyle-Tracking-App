@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity implements Runnable {
     private ImageView background;
     private Handler handler;
     private Context context;
-    private int NumberOfBackgroundImages = 5;
+    private final int NumberOfBackgroundImages = 5;
     private int currentBackgroundImageNumber = 1;
     private SharedPreferences sharedPref;
     private EditText ageInput, heightInput, weightInput;

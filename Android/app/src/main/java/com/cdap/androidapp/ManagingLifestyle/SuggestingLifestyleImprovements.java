@@ -44,6 +44,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
 
     private final String standingSuggestion = "You sit for a long time, try standing and moving about once per hour.";
     private final String sleepingSuggestion = "You aren't getting enough sleep, An adult requires at least 7 hours of sleep per day.";
+    private final String meditatingSuggestion = "A good time to meditate is ";
 
 
     @Override
@@ -190,21 +191,18 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
     /**
      * Will try to identify a good time for the user to meditate.
      * Will check of they are at home, before sending notification
-     *
+     * <p>
      * https://www.mayoclinic.org/tests-procedures/meditation/in-depth/meditation/art-20045858
      */
-    public void identifyMeditatingTime()
-    {
+    public void identifyMeditatingTime() {
         if (!sharedPref.contains(Constants.HOME_LONGITUDE) && !sharedPref.contains(Constants.HOME_LATITUDE) &&
-            !sharedPref.contains(Constants.WAKE_TIME_HOUR) && !sharedPref.contains(Constants.SLEEP_TIME_HOUR)) {
+                !sharedPref.contains(Constants.WAKE_TIME_HOUR) && !sharedPref.contains(Constants.SLEEP_TIME_HOUR)) {
             return;
         }
 
         LocalDateTime rightNow = LocalDateTime.now();
-        if(meditatingTime != null)
-        {
-            if(rightNow.getHour() == meditatingTime.getHour())
-            {
+        if (meditatingTime != null) {
+            if (rightNow.getHour() == meditatingTime.getHour()) {
                 sendANotification("Try Meditating",
                         "Meditating can help reduce stress.",
                         R.drawable.ic_meditating,
@@ -213,11 +211,10 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
             }
         }
 
-        int wakeHour = sharedPref.getInt(Constants.WAKE_TIME_HOUR,-1);
-        int sleepHour = sharedPref.getInt(Constants.SLEEP_TIME_HOUR,-1);
+        int wakeHour = sharedPref.getInt(Constants.WAKE_TIME_HOUR, -1);
+        int sleepHour = sharedPref.getInt(Constants.SLEEP_TIME_HOUR, -1);
 
-        if(rightNow.getHour() < wakeHour && rightNow.getHour() > sleepHour)
-        {
+        if (rightNow.getHour() < wakeHour && rightNow.getHour() > sleepHour) {
             return;
         }
 
@@ -227,11 +224,10 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
         double homeLongitude = Double.parseDouble(sharedPref.getString(Constants.HOME_LONGITUDE, ""));
 
         // Allowing Error margin of 0.0005
-        if(currentLatitude >= homeLatitude - 0.0005 && currentLatitude <= homeLatitude + 0.0005 &&
-            currentLongitude >= homeLongitude - 0.0005 && currentLongitude <= homeLongitude + 0.0005)
-        {
+        if (currentLatitude >= homeLatitude - 0.0005 && currentLatitude <= homeLatitude + 0.0005 &&
+                currentLongitude >= homeLongitude - 0.0005 && currentLongitude <= homeLongitude + 0.0005) {
             //Getting predictions of the last hour
-            List<PredictionEntity> predictions = dataBaseManager.getAllPredictions(rightNow.getHour()-1, rightNow.getDayOfMonth(), rightNow.getMonthValue(), rightNow.getYear());
+            List<PredictionEntity> predictions = dataBaseManager.getAllPredictions(rightNow.getHour() - 1, rightNow.getDayOfMonth(), rightNow.getMonthValue(), rightNow.getYear());
 
             int sitting = 0;
             for (PredictionEntity prediction : predictions) {
@@ -241,17 +237,32 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
             }
 
             double percentage = ((double) sitting / predictions.size());
-            if (percentage > 0.85)
-            {
+            if (percentage > 0.85) {
                 sendANotification("Try Meditating",
                         "Meditating can help reduce stress.",
                         R.drawable.ic_meditating,
                         Constants.MEDITATING);
                 meditatingTime = LocalDateTime.now();
+
+                String improvements = sharedPref.getString(Constants.IMPROVEMENTS, "");
+                if (!improvements.toLowerCase().contains("good time to meditate")) {
+                    String time;
+                    if(meditatingTime.getHour() > 11)
+                    {
+                        time = meditatingTime.getHour() + "pm";
+                    }
+                    else
+                    {
+                        time = meditatingTime.getHour() + "am";
+                    }
+                    SharedPreferences.Editor editor = sharedPref.edit();
+                    editor.putString(Constants.IMPROVEMENTS, improvements
+                            + ";" + meditatingSuggestion+time);
+                    editor.apply();
+                }
             }
 
         }
-
 
 
     }
@@ -260,9 +271,8 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
 
 
 
-
-
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Nullable
     @Override
