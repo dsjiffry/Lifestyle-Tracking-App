@@ -363,7 +363,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
         treeMap.put(stairs, Constants.STAIRS);
         treeMap.put(jogging, Constants.JOGGING);
 
-        lastReading.activity = treeMap.lastEntry().getValue();
+        lastReading.activity = treeMap.lastEntry().getValue(); //activity that occurred the most
 
         DataBaseManager dataBaseManager = new DataBaseManager(context);
         dataBaseManager.addPrediction(lastReading);
