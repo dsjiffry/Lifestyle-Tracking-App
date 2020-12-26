@@ -310,7 +310,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                     );
 
                     readingsInAMinute.add(predictionEntity);
-                    if (previousPredictionEntity!= null && previousPredictionEntity.minute != predictionEntity.minute) {
+                    if (previousPredictionEntity != null && previousPredictionEntity.minute != predictionEntity.minute) {
                         addToDatabase(previousPredictionEntity);
                     }
 
@@ -467,7 +467,13 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
         //Exercise days
         String days;
         if (sharedPref.contains(Constants.EXERCISE_DAYS)) {
-            days = sharedPref.getString(Constants.EXERCISE_DAYS, "") + ";" + rightNow.getDayOfWeek().toString();
+            if (!sharedPref.getString(Constants.EXERCISE_DAYS, "").contains(rightNow.getDayOfWeek().toString())) {
+                days = sharedPref.getString(Constants.EXERCISE_DAYS, "") + ";" + rightNow.getDayOfWeek().toString();
+            }
+            else
+            {
+                days = sharedPref.getString(Constants.EXERCISE_DAYS, "");
+            }
         } else {
             days = rightNow.getDayOfWeek().toString();
         }
@@ -520,8 +526,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                     return;
                 }
                 LocalDateTime rightNow = LocalDateTime.now();
-                if (rightNow.getDayOfWeek() != DayOfWeek.SATURDAY && rightNow.getDayOfWeek() != DayOfWeek.SUNDAY) {
-
+                if (rightNow.getDayOfWeek() != DayOfWeek.SATURDAY && rightNow.getDayOfWeek() != DayOfWeek.SUNDAY) { //Not the weekend
 
                     if (rightNow.getHour() >= 11 && rightNow.getHour() <= 15) //in between 11am and 3pm
                     {
