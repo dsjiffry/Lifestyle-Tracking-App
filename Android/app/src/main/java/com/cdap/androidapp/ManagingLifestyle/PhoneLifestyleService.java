@@ -54,7 +54,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Analyzes user's current lifestyle
- * Listens to messages from the watch and identifies user's:
+ * Listens to messages from the watch and also identifies user's:
  * wake-up time
  * sleep time
  * home location

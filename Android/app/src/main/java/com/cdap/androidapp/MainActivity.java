@@ -22,7 +22,7 @@ public class MainActivity extends AppCompatActivity implements Runnable {
     ////////////////////////////////////// DO NOT MODIFY THESE /////////////////////////////////////////////////
     public static final String PREFERENCES_NAME = "fitness_mobile_game_preferences";
     public static final String DB_NAME = "fitness_mobile_game_DB";
-    public static final String SERVER_BASE_URL = "http://192.168.8.143" +
+    public static final String SERVER_BASE_URL = "http://192.168.8.140" +
             ":8000";
     public static final int DB_VERSION = 1;
 
