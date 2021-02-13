@@ -1,4 +1,12 @@
 
-$ipAddress = (Test-Connection -ComputerName (hostname) -Count 1  | Select -ExpandProperty IPV4Address).IPAddressToString
+echo "`nGetting IP address..."
+
+$ipAddress = (
+    Get-NetIPConfiguration |
+    Where-Object {
+        $_.IPv4DefaultGateway -ne $null -and
+        $_.NetAdapter.Status -ne "Disconnected"
+    }
+).IPv4Address.IPAddress
 
 ./manage.py runserver ($ipAddress + ':8000')
