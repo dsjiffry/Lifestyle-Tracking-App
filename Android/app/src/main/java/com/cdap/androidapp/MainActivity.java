@@ -15,21 +15,32 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-public class MainActivity extends AppCompatActivity implements Runnable {
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.tasks.Tasks;
+import com.google.android.gms.wearable.MessageApi;
+import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.Wearable;
+
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+
+public class MainActivity extends AppCompatActivity implements Runnable, GoogleApiClient.ConnectionCallbacks {
 
     ////////////////////////////////////// DO NOT MODIFY THESE /////////////////////////////////////////////////
     public static final String PREFERENCES_NAME = "fitness_mobile_game_preferences";
     public static final String DB_NAME = "fitness_mobile_game_DB";
-    public static final String SERVER_BASE_URL = "http://192.168.8.142" +
+    public static final String SERVER_BASE_URL = "http://192.168.8.141" +
             ":8000";
-    public static final int DB_VERSION = 1;
 
     //Shared Preference Keys
     public static final String PREFERENCES_USERS_AGE = "user_age";
     public static final String PREFERENCES_USERS_HEIGHT = "user_height";
     public static final String PREFERENCES_USERS_WEIGHT = "user_weight";
+    public static final String PREFERENCES_USERS_BMI = "user_bmi";
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -74,7 +85,6 @@ public class MainActivity extends AppCompatActivity implements Runnable {
         background = findViewById(R.id.background_image);
 
 
-
         HandlerThread handlerThread = new HandlerThread("slideshowThread"); //Name the handlerThread
         handlerThread.start();
         handler = new Handler(handlerThread.getLooper());
@@ -92,13 +102,14 @@ public class MainActivity extends AppCompatActivity implements Runnable {
             return;
         }
 
-        int age,weight,height;
+        int age;
+        int weight;
+        int height;
         try {
             age = Integer.parseInt(ageInput.getText().toString());
             weight = Integer.parseInt(weightInput.getText().toString());
             height = Integer.parseInt(heightInput.getText().toString());
-        }catch (NumberFormatException e)
-        {
+        } catch (NumberFormatException e) {
             Toast.makeText(context, "Invalid Input", Toast.LENGTH_LONG).show();
             return;
         }
@@ -110,11 +121,42 @@ public class MainActivity extends AppCompatActivity implements Runnable {
             return;
         }
 
+        double bmi = (weight / ((height / 100.0) * (height / 100.0)));
+
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putInt(MainActivity.PREFERENCES_USERS_AGE, age);
         editor.putInt(MainActivity.PREFERENCES_USERS_WEIGHT, weight);
         editor.putInt(MainActivity.PREFERENCES_USERS_HEIGHT, height);
+        editor.putFloat(MainActivity.PREFERENCES_USERS_BMI, (float) bmi);
         editor.apply();
+
+
+        GoogleApiClient googleClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(result -> System.out.println("Connection failed"))
+                .addApi(Wearable.API)
+                .build();
+
+        // Sending age to watch
+        (new Thread(() -> {
+            List<Node> nodes;
+            googleClient.connect();
+            String message = "/age";
+            byte[] payload = String.valueOf(age).getBytes();
+            try {
+                nodes = Tasks.await(Wearable.getNodeClient(getApplicationContext()).getConnectedNodes());
+                for (Node node : nodes) {
+                    Wearable.MessageApi.sendMessage(googleClient, node.getId(), message, payload).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+                        @Override
+                        public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+                            System.out.println("WEAR Result " + sendMessageResult.getStatus());
+                        }
+                    });
+                }
+            } catch (ExecutionException | InterruptedException e) {
+                e.printStackTrace();
+            }
+        })).start();
 
         Intent intent = new Intent(MainActivity.this, NavigationActivity.class);
 //        intent.putExtra("key", value);
@@ -137,9 +179,7 @@ public class MainActivity extends AppCompatActivity implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        runOnUiThread(() -> {
-            background.setImageResource(resourceID);
-        });
+        runOnUiThread(() -> background.setImageResource(resourceID));
         background.startAnimation(fadeIn);
     }
 
@@ -159,7 +199,7 @@ public class MainActivity extends AppCompatActivity implements Runnable {
     @Override
     protected void onPause() {
         super.onPause();
-        if(handler != null) {
+        if (handler != null) {
             handler.removeCallbacks(this);
         }
     }
@@ -167,14 +207,22 @@ public class MainActivity extends AppCompatActivity implements Runnable {
     @Override
     protected void onResume() {
         super.onResume();
-        if(handler != null) {
+        if (handler != null) {
             handler.post(this);
         }
     }
 
     @Override
     public void onBackPressed() {
-        return;
     }
 
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
 }
