@@ -42,6 +42,10 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
     private double hoursOfSleep = -1;
     private LocalDateTime meditatingTime;
 
+
+    /**
+     * The notification Messages
+     */
     private final String standingSuggestion = "You sit for a long time, try standing and moving about once per hour.";
     private final String sleepingSuggestion = "You aren't getting enough sleep, An adult requires at least 7 hours of sleep per day.";
     private final String meditatingSuggestion = "A good time to meditate is ";
@@ -131,6 +135,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
 
     /**
      * The recommended amount of sleep for a healthy adult is at least seven hours
+     * Suggests a good sleeping time to get these hours
      * <p>
      * https://www.mayoclinic.org/healthy-lifestyle/adult-health/in-depth/sleep/art-20048379?mc_id=us&utm_source=newsnetwork&utm_medium=l&utm_content=content&utm_campaign=mayoclinic&geo=national&placementsite=enterprise&cauid=100721
      */

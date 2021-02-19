@@ -310,10 +310,13 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                     );
 
                     readingsInAMinute.add(predictionEntity);
+
+                    // Save to database every minute
                     if (previousPredictionEntity != null && previousPredictionEntity.minute != predictionEntity.minute) {
                         addToDatabase(previousPredictionEntity);
                     }
 
+                    // Once a day convert the per-minute readings to per-day readings.
                     if (previousPredictionEntity != null && previousPredictionEntity.day != predictionEntity.day) {
                         LifestylePercentageManager.saveDailyPercentages(context, previousPredictionEntity);
                     }
@@ -331,6 +334,10 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
         })).start();
     }
 
+    /**
+     * Adds the readings to the database.
+     * @param lastReading
+     */
     private void addToDatabase(PredictionEntity lastReading) {
 
         int standing, sitting, walking, stairs, jogging;

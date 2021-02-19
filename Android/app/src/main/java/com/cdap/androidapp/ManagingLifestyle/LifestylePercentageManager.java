@@ -11,6 +11,10 @@ import java.util.List;
 
 public class LifestylePercentageManager {
 
+    /**
+     * Taking the per-minute readings accumulated throughout the day and converting them to per-day readings.
+     * Once converted the per-minute readings will be deleted to save space.
+     */
     public static void saveDailyPercentages(final Context context, final PredictionEntity previousPredictionEntity) {
         (new Thread(() -> {
 
