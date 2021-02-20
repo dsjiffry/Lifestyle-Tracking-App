@@ -387,8 +387,8 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
         }
 
         LocalDateTime rightNow = LocalDateTime.now();
-        // Assuming people go to sleep sometime between 8pm and 3am.
-        if (rightNow.getHour() >= 20 && rightNow.getHour() <= 23 ||
+        // Assuming people go to sleep sometime between 6pm and 3am.
+        if (rightNow.getHour() >= 18 && rightNow.getHour() <= 23 ||
                 rightNow.getHour() >= 0 && rightNow.getHour() <= 3) {
 
             int hour = sharedPref.getInt(Constants.SLEEP_TIME_HOUR, -1);

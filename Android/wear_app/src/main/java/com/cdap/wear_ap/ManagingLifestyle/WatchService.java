@@ -44,8 +44,9 @@ public class WatchService extends Service implements Runnable, SensorEventListen
     private boolean chargingMessageSent = false;
     private int numberOfHeartRateReadings = 0;
     private SensorEventListener sensorEventListener;
-    private LocalDateTime lastHeartRateReading = null;
+    private LocalDateTime lastHeartRateReading = LocalDateTime.now().minusMinutes(10);
     private SharedPreferences sharedPref;
+    private boolean heartRateReadingComplete = true;
 
     private String message;
     private byte[] payload;
@@ -168,27 +169,27 @@ public class WatchService extends Service implements Runnable, SensorEventListen
         } else if (sensor.getType() == Sensor.TYPE_HEART_RATE) {
 
             int age = sharedPref.getInt("user_age", 0);
-            if (age <= 0) {
-                return;
-            }
+            if (age > 0) {
 
-            float heartRateReading = sensorEvent.values[0];
+                float heartRateReading = sensorEvent.values[0];
 
-            if (age >= 60 && heartRateReading > 160.0f ||
-                    age >= 50 && heartRateReading > 170.0f ||
-                    age >= 40 && heartRateReading > 180.0f ||
-                    age >= 30 && heartRateReading > 190.0f ||
-                    age >= 20 && heartRateReading > 200.0f) {
+                if (age >= 60 && heartRateReading > 160.0f ||
+                        age >= 50 && heartRateReading > 170.0f ||
+                        age >= 40 && heartRateReading > 180.0f ||
+                        age >= 30 && heartRateReading > 190.0f ||
+                        age >= 20 && heartRateReading > 200.0f) {
 
-                numberOfHeartRateReadings++;
-                if (numberOfHeartRateReadings > 6) {
-                    sendMessage("/exercising", "EXERCISING".getBytes());
+                    numberOfHeartRateReadings++;
+                    if (numberOfHeartRateReadings > 6) {
+                        sendMessage("/exercising", "EXERCISING".getBytes());
+                    }
+                } else {
+                    numberOfHeartRateReadings = 0; //Reset counter
                 }
-            } else {
-                numberOfHeartRateReadings = 0; //Reset counter
             }
             lastHeartRateReading = LocalDateTime.now();
             sensorManager.unregisterListener(sensorEventListener, heartRate);
+            heartRateReadingComplete = true;
         }
 
     }
@@ -222,9 +223,9 @@ public class WatchService extends Service implements Runnable, SensorEventListen
                 e.printStackTrace();
             }
 
-            if (lastHeartRateReading == null || LocalDateTime.now().isAfter(lastHeartRateReading.plusMinutes(10))) {
+            if ( heartRateReadingComplete && LocalDateTime.now().isAfter(lastHeartRateReading.plusMinutes(10))) {
                 sensorManager.registerListener(sensorEventListener, heartRate, SensorManager.SENSOR_DELAY_NORMAL);
-                lastHeartRateReading = LocalDateTime.now();
+                heartRateReadingComplete = false;
             }
         }
     }

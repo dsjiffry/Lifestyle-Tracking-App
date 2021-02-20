@@ -90,11 +90,14 @@ public class NavigationActivity extends AppCompatActivity implements Runnable {
         }
 
         //Getting location Permissions
-        while (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        while (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.ACCESS_BACKGROUND_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION,}, 1);
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.ACTIVITY_RECOGNITION,}, 1);
             try {
                 Thread.sleep(5000);
             } catch (InterruptedException e) {
@@ -116,6 +119,18 @@ public class NavigationActivity extends AppCompatActivity implements Runnable {
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+        // Getting Calories Burned Daily
+
+//        ZonedDateTime endTime = LocalDateTime.now().atZone(ZoneId.systemDefault());
+//        ZonedDateTime startTime = endTime.minusWeeks(1);
+//
+//        DataReadRequest readRequest = new DataReadRequest.Builder()
+//                .aggregate(DataType.AGGREGATE_CALORIES_EXPENDED)
+//                .bucketByActivityType(1, TimeUnit.SECONDS)
+//                .setTimeRange(startTime.toEpochSecond(), endTime.toEpochSecond(), TimeUnit.SECONDS)
+//                .build();
 
 
     }
