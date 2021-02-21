@@ -124,6 +124,7 @@ public class ActivityLifestyleMain extends AppCompatActivity implements Runnable
         Intent suggestingImprovementsIntent = new Intent(context, SuggestingLifestyleImprovements.class);
         List<Node> nodes;
         PhoneLifestyleService.IS_SERVER_REACHABLE = isServerAvailable();
+        updateUI();
 
 //        context.startService(suggestingImprovementsIntent);
 
@@ -480,5 +481,14 @@ public class ActivityLifestyleMain extends AppCompatActivity implements Runnable
         this.startActivity(intent);
     }
 
-
+    @Override
+    public void onBackPressed() {
+        if(PhoneLifestyleService.PREDICTION.equalsIgnoreCase("Watch is Charging"))
+        {
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putBoolean(Constants.WATCH_CHARGING,true);
+            editor.apply();
+        }
+        super.onBackPressed();
+    }
 }

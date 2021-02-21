@@ -23,6 +23,7 @@ import androidx.core.app.NotificationManagerCompat;
 
 import com.cdap.androidapp.MainActivity;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.DataBaseManager;
+import com.cdap.androidapp.ManagingLifestyle.DataBase.PercentageEntity;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.PredictionEntity;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.UserActivities;
 import com.cdap.androidapp.ManagingLifestyle.Models.Constants;
@@ -299,13 +300,13 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                     }
                     PREDICTION = stringBuilder.toString().replaceAll("\"", "").trim();
 
-                    LocalDateTime localDateTime = LocalDateTime.now();
+                    LocalDateTime rightNow = LocalDateTime.now();
                     PredictionEntity predictionEntity = new PredictionEntity(
-                            localDateTime.getDayOfMonth(),
-                            localDateTime.getMonthValue(),
-                            localDateTime.getYear(),
-                            localDateTime.getHour(),
-                            localDateTime.getMinute(),
+                            rightNow.getDayOfMonth(),
+                            rightNow.getMonthValue(),
+                            rightNow.getYear(),
+                            rightNow.getHour(),
+                            rightNow.getMinute(),
                             PREDICTION
                     );
 
@@ -318,7 +319,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
                     // Once a day convert the per-minute readings to per-day readings.
                     if (previousPredictionEntity != null && previousPredictionEntity.day != predictionEntity.day) {
-                        LifestylePercentageManager.saveDailyPercentages(context, previousPredictionEntity);
+                        saveDailyPercentages();
                     }
 
                     previousPredictionEntity = predictionEntity;
@@ -792,5 +793,78 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
         }
 
         return false;
+    }
+
+    /**
+     * Taking the per-minute readings accumulated throughout the day and converting them to per-day readings.
+     * Once converted the per-minute readings will be deleted to save space.
+     * Executed once per day.
+     */
+    private void saveDailyPercentages() {
+        (new Thread(() -> {
+
+            LocalDateTime yesterday = LocalDateTime.now().minusDays(1);
+            DataBaseManager dataBaseManager = new DataBaseManager(context);
+            int day = yesterday.getDayOfMonth();
+            int month = yesterday.getMonthValue();
+            int year = yesterday.getYear();
+
+            List<PredictionEntity> predictions = dataBaseManager.getAllPredictions(day, month, year);
+            int total = predictions.size();
+            int standing, sitting, walking, stairs, jogging, unknown;
+            standing = sitting = walking = stairs = jogging = unknown = 0;
+
+            for (PredictionEntity predictionEntity : predictions) {
+                switch (predictionEntity.activity) {
+                    case UserActivities.STANDING:
+                        standing++;
+                        break;
+                    case UserActivities.SITTING:
+                        sitting++;
+                        break;
+                    case UserActivities.WALKING:
+                        walking++;
+                        break;
+                    case UserActivities.STAIRS:
+                        stairs++;
+                        break;
+                    case UserActivities.JOGGING:
+                        jogging++;
+                        break;
+                    default:
+                        unknown++;
+                        break;
+                }
+            }
+
+            int percentage = (int) (((double) standing / total) * 100);
+            PercentageEntity percentageEntity = new PercentageEntity(day, month, year, UserActivities.STANDING, percentage);
+            dataBaseManager.addPercentage(percentageEntity);
+
+            percentage = (int) (((double) sitting / total) * 100);
+            percentageEntity = new PercentageEntity(day, month, year, UserActivities.SITTING, percentage);
+            dataBaseManager.addPercentage(percentageEntity);
+
+            percentage = (int) (((double) walking / total) * 100);
+            percentageEntity = new PercentageEntity(day, month, year, UserActivities.WALKING, percentage);
+            dataBaseManager.addPercentage(percentageEntity);
+
+            percentage = (int) (((double) stairs / total) * 100);
+            percentageEntity = new PercentageEntity(day, month, year, UserActivities.STAIRS, percentage);
+            dataBaseManager.addPercentage(percentageEntity);
+
+            percentage = (int) (((double) jogging / total) * 100);
+            percentageEntity = new PercentageEntity(day, month, year, UserActivities.JOGGING, percentage);
+            dataBaseManager.addPercentage(percentageEntity);
+
+            if (unknown > 0) {
+                percentage = (int) (((double) unknown / total) * 100);
+                percentageEntity = new PercentageEntity(day, month, year, "unknown", percentage);
+                dataBaseManager.addPercentage(percentageEntity);
+            }
+
+            dataBaseManager.deletePrediction(predictions);
+
+        })).start();
     }
 }

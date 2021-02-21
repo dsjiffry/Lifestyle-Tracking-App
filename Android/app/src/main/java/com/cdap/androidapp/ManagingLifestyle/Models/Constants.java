@@ -32,6 +32,7 @@ public class Constants {
     public static final String HOME_LONGITUDE = "lifestyle_" + "HomeLongitude";
 
     public static final String IMPROVEMENTS = "lifestyle_" + "improvements";
+    public static final String WATCH_CHARGING = "lifestyle_" + "watch_charging";
     //////////////////////////////////////////////////////////////////////////////////////////////
 
 
