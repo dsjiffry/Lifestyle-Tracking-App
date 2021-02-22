@@ -18,6 +18,8 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.cdap.androidapp.ManagingLifestyle.DataBase.BmiEntity;
+import com.cdap.androidapp.ManagingLifestyle.DataBase.DataBaseManager;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.tasks.Tasks;
@@ -25,6 +27,7 @@ import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.Wearable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -40,7 +43,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
     public static final String PREFERENCES_USERS_AGE = "user_age";
     public static final String PREFERENCES_USERS_HEIGHT = "user_height";
     public static final String PREFERENCES_USERS_WEIGHT = "user_weight";
-    public static final String PREFERENCES_USERS_BMI = "user_bmi";
+    public static final String PREFERENCES_USERS_CURRENT_BMI = "user_bmi";
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -127,9 +130,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
         editor.putInt(MainActivity.PREFERENCES_USERS_AGE, age);
         editor.putInt(MainActivity.PREFERENCES_USERS_WEIGHT, weight);
         editor.putInt(MainActivity.PREFERENCES_USERS_HEIGHT, height);
-        editor.putFloat(MainActivity.PREFERENCES_USERS_BMI, (float) bmi);
+        editor.putFloat(MainActivity.PREFERENCES_USERS_CURRENT_BMI, (float) bmi);
         editor.apply();
-
 
         GoogleApiClient googleClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
@@ -139,6 +141,14 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
 
         // Sending age to watch
         (new Thread(() -> {
+
+            //Saving BMI to Database
+            LocalDateTime rightNow = LocalDateTime.now();
+            BmiEntity bmiEntity = new BmiEntity((float) bmi, rightNow.getDayOfMonth(), rightNow.getMonthValue(), rightNow.getYear());
+            DataBaseManager dataBaseManager = new DataBaseManager(context);
+            dataBaseManager.addBmi(bmiEntity);
+
+
             List<Node> nodes;
             googleClient.connect();
             String message = "/age";

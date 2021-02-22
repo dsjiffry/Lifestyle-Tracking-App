@@ -220,6 +220,51 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/line_chart_card"
+                android:layout_width="match_parent"
+                android:layout_height="176dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:background="@drawable/rounded_corner">
+
+                <TextView
+                    android:id="@+id/textView11"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:background="#FFFFFF"
+                    android:gravity="center_horizontal|center_vertical"
+                    android:text="The blue lines show the ideal BMI range"
+                    android:textColor="#000000"
+                    android:textSize="10dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent" />
+
+                <org.eazegraph.lib.charts.ValueLineChart
+                    android:id="@+id/cubiclinechart"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="0"
+                    android:background="#FFFFFF"
+                    app:egAxisTextColor="#000000"
+                    app:egAxisTextSize="10dp"
+                    app:egLegendColor="#000000"
+                    app:egLegendHeight="20dp"
+                    app:egLegendTextSize="10dp"
+                    app:egUseDynamicScaling="true"
+                    app:egUseOverlapFill="true"
+                    app:layout_constraintBottom_toTopOf="@+id/textView11"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0.0"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="0.0">
+
+                </org.eazegraph.lib.charts.ValueLineChart>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/suggestions_card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

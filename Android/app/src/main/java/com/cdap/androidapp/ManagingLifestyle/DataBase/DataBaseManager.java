@@ -82,4 +82,30 @@ public class DataBaseManager
     }
 
 
+    public void addBmi(BmiEntity bmiEntity)
+    {
+        db.bmiDao().insertBmi(bmiEntity);
+    }
+
+    public void updateBmi(BmiEntity bmiEntity)
+    {
+        db.bmiDao().updateBmi(bmiEntity);
+    }
+
+    public void deleteBmi(BmiEntity bmiEntity)
+    {
+        db.bmiDao().deleteBmi(bmiEntity);
+    }
+
+    public void deleteBmi(List<BmiEntity> bmiEntities)
+    {
+        db.bmiDao().deleteBmi(bmiEntities);
+    }
+
+    public List<BmiEntity> loadBmiHistory()
+    {
+        return db.bmiDao().loadBmiHistory();
+    }
+
+
 }

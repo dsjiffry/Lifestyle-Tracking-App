@@ -14,21 +14,25 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 
 import com.cdap.androidapp.MainActivity;
+import com.cdap.androidapp.ManagingLifestyle.DataBase.BmiEntity;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.DataBaseManager;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.PercentageEntity;
 import com.cdap.androidapp.ManagingLifestyle.Models.Constants;
 import com.cdap.androidapp.R;
 
 import org.eazegraph.lib.charts.PieChart;
+import org.eazegraph.lib.charts.ValueLineChart;
 import org.eazegraph.lib.models.PieModel;
 import org.eazegraph.lib.models.ValueLinePoint;
 import org.eazegraph.lib.models.ValueLineSeries;
 
+import java.text.DateFormatSymbols;
 import java.util.List;
 
 public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity implements Runnable {
 
     private PieChart pieChart;
+    private ValueLineChart lineChart;
     TextView chartStanding, chartSitting, chartWalking,
             chartStairs, chartJogging, chartNoOfDays,
             suggestionsTopic;
@@ -44,6 +48,7 @@ public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity i
         setContentView(R.layout.activity_lifestyle_suggesting_improvements);
         context = getApplicationContext();
         pieChart = findViewById(R.id.piechart);
+        lineChart = findViewById(R.id.cubiclinechart);
         chartStanding = findViewById(R.id.pieChart_standing_textView);
         chartSitting = findViewById(R.id.pieChart_sitting_textView);
         chartWalking = findViewById(R.id.pieChart_walking_textView);
@@ -92,6 +97,7 @@ public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity i
 
         numberOfDays = numberOfDays / 5;
 
+        updateLineChart();
         if (numberOfDays > 0) {
             updatePieChart(standingPercentage / numberOfDays,
                     sittingPercentage / numberOfDays,
@@ -99,9 +105,7 @@ public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity i
                     stairsPercentage / numberOfDays,
                     joggingPercentage / numberOfDays,
                     numberOfDays);
-        }
-        else
-        {
+        } else {
             emptyPieChart();
         }
 
@@ -153,26 +157,73 @@ public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity i
 
     public void updateLineChart() {
         ValueLineSeries series = new ValueLineSeries();
-        series.setColor(0xFF56B7F1);
+        series.setColor(Color.GREEN);
 
-        series.addPoint(new ValueLinePoint("Jan", 2.4f));
-        series.addPoint(new ValueLinePoint("Feb", 3.4f));
-        series.addPoint(new ValueLinePoint("Mar", .4f));
-        series.addPoint(new ValueLinePoint("Apr", 1.2f));
-        series.addPoint(new ValueLinePoint("Mai", 2.6f));
-        series.addPoint(new ValueLinePoint("Jun", 1.0f));
-        series.addPoint(new ValueLinePoint("Jul", 3.5f));
-        series.addPoint(new ValueLinePoint("Aug", 2.4f));
-        series.addPoint(new ValueLinePoint("Sep", 2.4f));
-        series.addPoint(new ValueLinePoint("Oct", 3.4f));
-        series.addPoint(new ValueLinePoint("Nov", .4f));
-        series.addPoint(new ValueLinePoint("Dec", 1.3f));
+        DataBaseManager dataBaseManager = new DataBaseManager(context);
+        List<BmiEntity> bmiEntities = dataBaseManager.loadBmiHistory();
 
-//        lineChart.addSeries(series);
+        int count = 0;
+        float endingValue = 0f;
+
+        series.addPoint(new ValueLinePoint("starting point", 0f));
+        for (BmiEntity bmiEntity : bmiEntities) {
+            count++;
+            String day;
+
+            if (bmiEntity.day >= 11 && bmiEntity.day <= 13) {
+                day = bmiEntity.day + "th";
+            } else {
+                switch (bmiEntity.day % 10) {
+                    case 1:
+                        day = bmiEntity.day + "st";
+                        break;
+                    case 2:
+                        day = bmiEntity.day + "nd";
+                        break;
+                    case 3:
+                        day = bmiEntity.day + "rd";
+                        break;
+                    default:
+                        day = bmiEntity.day + "th";
+                }
+            }
+
+            String monthString = new DateFormatSymbols().getMonths()[bmiEntity.month-1];
+            monthString = monthString.substring(0,3);
+
+            series.addPoint(new ValueLinePoint(day+" "+monthString, bmiEntity.bmi));
+            endingValue = bmiEntity.bmi;
+
+
+            if (count >= 5) {
+                break;
+            }
+        }
+        series.addPoint(new ValueLinePoint("ending point", endingValue));
+        lineChart.addSeries(series);
+
+
+
+
+        //ideal BMI is in the 18.5 to 24.9 range
+        ValueLineSeries idealMin = new ValueLineSeries();
+        idealMin.setColor(Color.BLUE);
+        idealMin.addPoint(new ValueLinePoint("starting point", 18.5f));
+        idealMin.addPoint(new ValueLinePoint("ending point", 18.5f));
+        lineChart.addSeries(idealMin);
+
+        ValueLineSeries idealMax = new ValueLineSeries();
+        idealMax.setColor(Color.BLUE);
+        idealMax.addPoint(new ValueLinePoint("starting point", 24.9f));
+        idealMax.addPoint(new ValueLinePoint("ending point", 24.9f));
+        lineChart.addSeries(idealMax);
+
+
+        runOnUiThread(() -> lineChart.startAnimation());
     }
 
     public void emptyPieChart() {
-        updatePieChart(0,0,0,0,0,0);
+        updatePieChart(0, 0, 0, 0, 0, 0);
     }
 
     public void addSuggestion(String message) {
