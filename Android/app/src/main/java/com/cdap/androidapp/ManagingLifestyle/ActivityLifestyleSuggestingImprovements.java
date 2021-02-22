@@ -21,6 +21,8 @@ import com.cdap.androidapp.R;
 
 import org.eazegraph.lib.charts.PieChart;
 import org.eazegraph.lib.models.PieModel;
+import org.eazegraph.lib.models.ValueLinePoint;
+import org.eazegraph.lib.models.ValueLineSeries;
 
 import java.util.List;
 
@@ -149,42 +151,28 @@ public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity i
         });
     }
 
-    public void emptyPieChart() {
-        pieChart.addPieSlice(
-                new PieModel(
-                        "Standing",
-                        0,
-                        getColor(R.color.Standing)));
-        pieChart.addPieSlice(
-                new PieModel(
-                        "Sitting",
-                        0,
-                        getColor(R.color.Sitting)));
-        pieChart.addPieSlice(
-                new PieModel(
-                        "Walking",
-                        0,
-                        getColor(R.color.Walking)));
-        pieChart.addPieSlice(
-                new PieModel(
-                        "Stairs",
-                        0,
-                        getColor(R.color.Stairs)));
-        pieChart.addPieSlice(
-                new PieModel(
-                        "Jogging",
-                        0,
-                        getColor(R.color.Jogging)));
-        runOnUiThread(() -> {
-            pieChart.startAnimation();
+    public void updateLineChart() {
+        ValueLineSeries series = new ValueLineSeries();
+        series.setColor(0xFF56B7F1);
 
-            chartStanding.setText("Standing (" + 0 + "%)");
-            chartSitting.setText("Sitting (" + 0 + "%)");
-            chartWalking.setText("Walking (" + 0 + "%)");
-            chartStairs.setText("Stairs (" + 0 + "%)");
-            chartJogging.setText("Jogging (" + 0 + "%)");
-            chartNoOfDays.setText("Number of days: " + 0);
-        });
+        series.addPoint(new ValueLinePoint("Jan", 2.4f));
+        series.addPoint(new ValueLinePoint("Feb", 3.4f));
+        series.addPoint(new ValueLinePoint("Mar", .4f));
+        series.addPoint(new ValueLinePoint("Apr", 1.2f));
+        series.addPoint(new ValueLinePoint("Mai", 2.6f));
+        series.addPoint(new ValueLinePoint("Jun", 1.0f));
+        series.addPoint(new ValueLinePoint("Jul", 3.5f));
+        series.addPoint(new ValueLinePoint("Aug", 2.4f));
+        series.addPoint(new ValueLinePoint("Sep", 2.4f));
+        series.addPoint(new ValueLinePoint("Oct", 3.4f));
+        series.addPoint(new ValueLinePoint("Nov", .4f));
+        series.addPoint(new ValueLinePoint("Dec", 1.3f));
+
+//        lineChart.addSeries(series);
+    }
+
+    public void emptyPieChart() {
+        updatePieChart(0,0,0,0,0,0);
     }
 
     public void addSuggestion(String message) {

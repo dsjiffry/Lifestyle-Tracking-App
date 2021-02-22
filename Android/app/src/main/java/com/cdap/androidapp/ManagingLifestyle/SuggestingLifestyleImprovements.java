@@ -30,7 +30,7 @@ import java.util.List;
 
 /**
  * By the time we start using this class we should have already run {@link PhoneLifestyleService} for a week
- * This class will monitor the predictions made and decide how to improve the user's life.
+ * This class will monitor the predictions made and suggest how to improve the user's health.
  */
 public class SuggestingLifestyleImprovements extends Service implements Runnable {
 
@@ -63,7 +63,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
     public int onStartCommand(Intent intent, int flags, int startId) {
 
         if (!isRunning) {
-            HandlerThread handlerThread = new HandlerThread("MyHandlerThread"); //Name the handlerThread
+            HandlerThread handlerThread = new HandlerThread("SLI_HandlerThread"); //Name the handlerThread
             handlerThread.start();
             handler = new Handler(handlerThread.getLooper());
             handler.post(this); // Start thread immediately
@@ -80,12 +80,12 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
         checkSleepHours();
         identifyMeditatingTime();
 
-        //Getting milliseconds to next hour
+        //Getting milliseconds to next Instance
         LocalDateTime rightNow = LocalDateTime.now();
-        LocalDateTime nextHour = rightNow.plusHours(1).truncatedTo(ChronoUnit.HOURS);
+        LocalDateTime nextHour = rightNow.plusHours(2).truncatedTo(ChronoUnit.HOURS);
         long duration = Duration.between(rightNow, nextHour).toMillis();
 
-        handler.postDelayed(this, duration); //fire at next hour
+        handler.postDelayed(this, duration); //fire in 2 hours
         // Stop using: handler.removeCallbacks(this);
     }
 
@@ -114,7 +114,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
         }
 
         double percentage = ((double) sitting / total);
-        if (percentage > 0.85) //sitting for more than 85% of the time
+        if (percentage > 0.95) //sitting for more than 95% of the time
         {
             sendANotification("You've been sitting for a long time",
                     "We recommend moving about for a bit",
