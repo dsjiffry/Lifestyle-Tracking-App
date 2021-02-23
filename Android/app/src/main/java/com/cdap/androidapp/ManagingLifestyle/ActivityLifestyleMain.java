@@ -471,13 +471,8 @@ public class ActivityLifestyleMain extends AppCompatActivity implements Runnable
      * will send user to Activity to edit their basic details
      */
     public void editButton(View view) {
-        SharedPreferences.Editor editor = sharedPref.edit();
-        editor.remove(MainActivity.PREFERENCES_USERS_WEIGHT);
-        editor.remove(MainActivity.PREFERENCES_USERS_AGE);
-        editor.remove(MainActivity.PREFERENCES_USERS_HEIGHT);
-        editor.apply();
-
         Intent intent = new Intent(ActivityLifestyleMain.this, MainActivity.class);
+        intent.putExtra("IS_EDIT_MODE", true);
         this.startActivity(intent);
     }
 

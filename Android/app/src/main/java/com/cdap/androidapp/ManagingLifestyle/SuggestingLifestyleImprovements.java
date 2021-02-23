@@ -3,6 +3,7 @@ package com.cdap.androidapp.ManagingLifestyle;
 import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -79,6 +80,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
         checkTimeSeated();
         checkSleepHours();
         identifyMeditatingTime();
+        updateUserDetails();
 
         //Getting milliseconds to next Instance
         LocalDateTime rightNow = LocalDateTime.now();
@@ -272,6 +274,32 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
 
     }
 
+    /**
+     * In order to track bmi and plot graph
+     * will request the user to update their details once a week.
+     */
+    private void updateUserDetails()
+    {
+        if(!sharedPref.contains(MainActivity.PREFERENCES_USERS_LAST_BMI_READING))
+        {return;}
+
+        LocalDateTime rightNow = LocalDateTime.now();
+        LocalDateTime lastBmiReading = LocalDateTime.parse(sharedPref.getString(MainActivity.PREFERENCES_USERS_LAST_BMI_READING,""));
+
+        if(lastBmiReading.plusWeeks(1).isBefore(rightNow))
+        {
+            Intent notificationIntent = new Intent(context, MainActivity.class);
+            notificationIntent.putExtra("IS_EDIT_MODE", true);
+            PendingIntent pendingIntent = PendingIntent.getActivity(context, 0,
+                    notificationIntent, 0);
+
+            sendANotification("Update Details",
+                    "Tap to update your weight and height details",
+                    R.drawable.ic_basic_details,
+                    Constants.UPDATE_DETAILS,
+                    pendingIntent);
+        }
+    }
 
 
 
@@ -285,21 +313,30 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
         return null;
     }
 
-    public void sendANotification(String contentTitle, String contentText, int drawableIcon, int notificationId) {
+    private void sendANotification(String contentTitle, String contentText, int drawableIcon, int notificationId, PendingIntent pendingIntent) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "SuggestingLifestyleImprovements")
-                .setContentTitle(contentTitle)
-                .setContentText(contentText)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setSmallIcon(drawableIcon)
-                .setOngoing(false);
+                    .setContentTitle(contentTitle)
+                    .setContentText(contentText)
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .setSmallIcon(drawableIcon)
+                    .setOngoing(false);
 
-        NotificationChannel channel = new NotificationChannel("SuggestingLifestyleImprovements", "improving Lifestyle", NotificationManager.IMPORTANCE_DEFAULT);
-        channel.setDescription("notifies the user of changes they can make to their current lifestyle");
-        NotificationManager notificationManager = getSystemService(NotificationManager.class);
-        notificationManager.createNotificationChannel(channel);
+            NotificationChannel channel = new NotificationChannel("SuggestingLifestyleImprovements", "improving Lifestyle", NotificationManager.IMPORTANCE_DEFAULT);
+            channel.setDescription("notifies the user of changes they can make to their current lifestyle");
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+
+            if(pendingIntent != null) {
+                builder = builder.setAutoCancel(true)
+                        .setContentIntent(pendingIntent);
+            }
 
         // notificationId is a unique int for each notification that you must define
         notificationManager.notify(notificationId, builder.build());
+    }
+
+    private void sendANotification(String contentTitle, String contentText, int drawableIcon, int notificationId) {
+        sendANotification(contentTitle,contentText,drawableIcon,notificationId,null);
     }
 
     @Override

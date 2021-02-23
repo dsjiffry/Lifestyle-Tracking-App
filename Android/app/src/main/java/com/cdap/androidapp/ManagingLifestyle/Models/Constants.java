@@ -42,6 +42,7 @@ public class Constants {
     public static final int PHONE_SERVICE = 2;
     public static final int NOT_ENOUGH_SLEEP = 3;
     public static final int MEDITATING = 4;
+    public static final int UPDATE_DETAILS = 5;
 
 
     /////////////////////////////////// Predictions ///////////////////////////////////

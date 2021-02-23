@@ -12,7 +12,7 @@ import java.util.List;
 @Dao
 public interface BmiDao {
 
-    @Insert(onConflict = OnConflictStrategy.ABORT)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertBmi(BmiEntity bmiEntity);
 
     @Update

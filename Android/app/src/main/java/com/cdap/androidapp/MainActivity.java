@@ -30,6 +30,7 @@ import com.google.android.gms.wearable.Wearable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class MainActivity extends AppCompatActivity implements Runnable, GoogleApiClient.ConnectionCallbacks {
 
@@ -44,6 +45,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
     public static final String PREFERENCES_USERS_HEIGHT = "user_height";
     public static final String PREFERENCES_USERS_WEIGHT = "user_weight";
     public static final String PREFERENCES_USERS_CURRENT_BMI = "user_bmi";
+    public static final String PREFERENCES_USERS_LAST_BMI_READING = "user_last_bmi_reading";
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -59,15 +61,17 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
-        if (sharedPref.contains(MainActivity.PREFERENCES_USERS_AGE)
-                && sharedPref.contains(MainActivity.PREFERENCES_USERS_HEIGHT)
-                && sharedPref.contains(MainActivity.PREFERENCES_USERS_WEIGHT)) {
-            Intent intent = new Intent(MainActivity.this, NavigationActivity.class);
-//        intent.putExtra("key", value);
-            this.startActivity(intent);
-            return;
-        }
 
+        if (!getIntent().getBooleanExtra("IS_EDIT_MODE", false)) {
+            if (sharedPref.contains(MainActivity.PREFERENCES_USERS_AGE)
+                    && sharedPref.contains(MainActivity.PREFERENCES_USERS_HEIGHT)
+                    && sharedPref.contains(MainActivity.PREFERENCES_USERS_WEIGHT)) {
+                Intent intent = new Intent(MainActivity.this, NavigationActivity.class);
+                //        intent.putExtra("key", value);
+                this.startActivity(intent);
+                return;
+            }
+        }
         //Making status bar and navigation bar transparent
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
@@ -131,6 +135,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
         editor.putInt(MainActivity.PREFERENCES_USERS_WEIGHT, weight);
         editor.putInt(MainActivity.PREFERENCES_USERS_HEIGHT, height);
         editor.putFloat(MainActivity.PREFERENCES_USERS_CURRENT_BMI, (float) bmi);
+        editor.putString(MainActivity.PREFERENCES_USERS_LAST_BMI_READING, LocalDateTime.now().toString());
         editor.apply();
 
         GoogleApiClient googleClient = new GoogleApiClient.Builder(this)
@@ -195,6 +200,17 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
 
     @Override
     public void run() {
+        if (getIntent().getBooleanExtra("IS_EDIT_MODE", false)) {
+            ageInput.setText(String.valueOf(sharedPref.getInt(MainActivity.PREFERENCES_USERS_AGE,0)));
+            heightInput.setText(String.valueOf(sharedPref.getInt(MainActivity.PREFERENCES_USERS_HEIGHT,0)));
+            weightInput.setText(String.valueOf(sharedPref.getInt(MainActivity.PREFERENCES_USERS_WEIGHT,0)));
+
+            int imageNumber = ThreadLocalRandom.current().nextInt(1, NumberOfBackgroundImages + 1);
+            int resourceID = getResources().getIdentifier("intro_background_" + imageNumber, "drawable", getPackageName());
+            runOnUiThread(() -> background.setImageResource(resourceID));
+            return;
+        }
+
         if (currentBackgroundImageNumber > NumberOfBackgroundImages) {
             currentBackgroundImageNumber = 1;
         }
@@ -202,7 +218,6 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
         currentBackgroundImageNumber++;
 
         handler.postDelayed(this, 10000); //Stop using: handler.removeCallbacks(this);
-
     }
 
 
