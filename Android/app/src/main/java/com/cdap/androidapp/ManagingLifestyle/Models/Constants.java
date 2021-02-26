@@ -63,4 +63,9 @@ public class Constants {
 //    public static final String WALKING = "walking";
     public static final String VEHICLE = "vehicle";
 
+    ////////////////////////////////////////// Genders /////////////////////////////////////////
+
+    public static final String MALE = "male";
+    public static final String FEMALE = "female";
+
 }

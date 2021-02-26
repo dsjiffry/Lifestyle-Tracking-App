@@ -13,6 +13,7 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RadioButton;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -20,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.cdap.androidapp.ManagingLifestyle.DataBase.BmiEntity;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.DataBaseManager;
+import com.cdap.androidapp.ManagingLifestyle.Models.Constants;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.tasks.Tasks;
@@ -37,7 +39,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
     ////////////////////////////////////// DO NOT MODIFY THESE /////////////////////////////////////////////////
     public static final String PREFERENCES_NAME = "fitness_mobile_game_preferences";
     public static final String DB_NAME = "fitness_mobile_game_DB";
-    public static final String SERVER_BASE_URL = "http://192.168.8.140" +
+    public static final String SERVER_BASE_URL = "http://34.123.19.46" +
             ":8000";
 
     //Shared Preference Keys
@@ -46,6 +48,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
     public static final String PREFERENCES_USERS_WEIGHT = "user_weight";
     public static final String PREFERENCES_USERS_CURRENT_BMI = "user_bmi";
     public static final String PREFERENCES_USERS_LAST_BMI_READING = "user_last_bmi_reading";
+    public static final String PREFERENCES_USERS_GENDER = "user_gender";
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -56,6 +59,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
     private int currentBackgroundImageNumber = 1;
     private SharedPreferences sharedPref;
     private EditText ageInput, heightInput, weightInput;
+    private RadioButton maleButton, femaleButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,6 +94,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
         heightInput = findViewById(R.id.heightInput);
         weightInput = findViewById(R.id.weightInput);
         background = findViewById(R.id.background_image);
+        maleButton = findViewById(R.id.maleButton);
+        femaleButton = findViewById(R.id.femaleButton);
 
 
         HandlerThread handlerThread = new HandlerThread("slideshowThread"); //Name the handlerThread
@@ -104,7 +110,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
 
         if (ageInput.getText().toString().trim().isEmpty()
                 || heightInput.getText().toString().trim().isEmpty()
-                || weightInput.getText().toString().trim().isEmpty()) {
+                || weightInput.getText().toString().trim().isEmpty()
+                || !maleButton.isChecked() && !femaleButton.isChecked()) {
             Toast.makeText(context, "Please fill all fields", Toast.LENGTH_LONG).show();
             return;
         }
@@ -136,6 +143,14 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
         editor.putInt(MainActivity.PREFERENCES_USERS_HEIGHT, height);
         editor.putFloat(MainActivity.PREFERENCES_USERS_CURRENT_BMI, (float) bmi);
         editor.putString(MainActivity.PREFERENCES_USERS_LAST_BMI_READING, LocalDateTime.now().toString());
+        if(maleButton.isChecked())
+        {
+            editor.putString(MainActivity.PREFERENCES_USERS_GENDER, Constants.MALE);
+        }
+        else
+        {
+            editor.putString(MainActivity.PREFERENCES_USERS_GENDER, Constants.FEMALE);
+        }
         editor.apply();
 
         GoogleApiClient googleClient = new GoogleApiClient.Builder(this)
@@ -204,6 +219,17 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
             ageInput.setText(String.valueOf(sharedPref.getInt(MainActivity.PREFERENCES_USERS_AGE,0)));
             heightInput.setText(String.valueOf(sharedPref.getInt(MainActivity.PREFERENCES_USERS_HEIGHT,0)));
             weightInput.setText(String.valueOf(sharedPref.getInt(MainActivity.PREFERENCES_USERS_WEIGHT,0)));
+            switch (sharedPref.getString(MainActivity.PREFERENCES_USERS_GENDER,"").toLowerCase())
+            {
+                case Constants.MALE:
+                    maleButton.setChecked(true);
+                    femaleButton.setChecked(false);
+                    break;
+                case Constants.FEMALE:
+                    femaleButton.setChecked(true);
+                    maleButton.setChecked(false);
+                    break;
+            }
 
             int imageNumber = ThreadLocalRandom.current().nextInt(1, NumberOfBackgroundImages + 1);
             int resourceID = getResources().getIdentifier("intro_background_" + imageNumber, "drawable", getPackageName());

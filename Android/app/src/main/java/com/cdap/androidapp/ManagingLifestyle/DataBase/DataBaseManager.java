@@ -2,6 +2,7 @@ package com.cdap.androidapp.ManagingLifestyle.DataBase;
 
 import android.content.Context;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class DataBaseManager
@@ -79,6 +80,23 @@ public class DataBaseManager
     public List<PercentageEntity> loadEntireHistory()
     {
         return db.percentageDao().loadEntireHistory();
+    }
+
+    public List<PercentageEntity> getDayPercentage(int day, int month, int year)
+    {
+        List<PercentageEntity> percentages = db.percentageDao().loadEntireHistory();
+        List<PercentageEntity> dayPercentage = new ArrayList<>();
+        for(PercentageEntity percentageEntity : percentages)
+        {
+            if(percentageEntity.day == day &&
+                    percentageEntity.month == month &&
+                    percentageEntity.year == year)
+            {
+                dayPercentage.add(percentageEntity);
+            }
+        }
+
+        return dayPercentage;
     }
 
 

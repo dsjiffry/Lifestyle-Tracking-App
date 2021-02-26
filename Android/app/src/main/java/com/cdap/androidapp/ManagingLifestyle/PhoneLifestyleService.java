@@ -337,6 +337,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
     /**
      * Adds the readings to the database.
+     *
      * @param lastReading
      */
     private void addToDatabase(PredictionEntity lastReading) {
@@ -477,9 +478,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
         if (sharedPref.contains(Constants.EXERCISE_DAYS)) {
             if (!sharedPref.getString(Constants.EXERCISE_DAYS, "").contains(rightNow.getDayOfWeek().toString())) {
                 days = sharedPref.getString(Constants.EXERCISE_DAYS, "") + ";" + rightNow.getDayOfWeek().toString();
-            }
-            else
-            {
+            } else {
                 days = sharedPref.getString(Constants.EXERCISE_DAYS, "");
             }
         } else {
@@ -799,6 +798,11 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
      * Taking the per-minute readings accumulated throughout the day and converting them to per-day readings.
      * Once converted the per-minute readings will be deleted to save space.
      * Executed once per day.
+     *
+     * Calculating the daily calorie burn due to the activities tracked:
+     * https://www.healthline.com/health/fitness-exercise/calories-burned-standing#comparison-chart
+     * https://www.howmany.wiki/calories-burned/Calories-burned_standing_an_hour
+     * https://www.runsociety.com/training/stair-climbing-vs-running/#:~:text=One%20hour%20of%20stair%20climbing,about%200.05%20calories%20on%20average.
      */
     private void saveDailyPercentages() {
         (new Thread(() -> {
@@ -837,29 +841,47 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                 }
             }
 
+            String gender = sharedPref.getString(MainActivity.PREFERENCES_USERS_GENDER, "").toLowerCase();
+            double calories = 0;
+
+
             int percentage = (int) (((double) standing / total) * 100);
-            PercentageEntity percentageEntity = new PercentageEntity(day, month, year, UserActivities.STANDING, percentage);
+            double hours = (24.0 * percentage) / 100.0;
+            calories = hours * 100;
+            PercentageEntity percentageEntity = new PercentageEntity(day, month, year, UserActivities.STANDING, percentage, calories);
             dataBaseManager.addPercentage(percentageEntity);
 
             percentage = (int) (((double) sitting / total) * 100);
-            percentageEntity = new PercentageEntity(day, month, year, UserActivities.SITTING, percentage);
+            hours = (24.0 * percentage) / 100.0;
+            if (gender.equalsIgnoreCase(Constants.MALE)) {
+                calories = hours * 89.72;
+            } else if (gender.equalsIgnoreCase(Constants.FEMALE)) {
+                calories = hours * 75.70;
+            }
+            percentageEntity = new PercentageEntity(day, month, year, UserActivities.SITTING, percentage, calories);
             dataBaseManager.addPercentage(percentageEntity);
 
             percentage = (int) (((double) walking / total) * 100);
-            percentageEntity = new PercentageEntity(day, month, year, UserActivities.WALKING, percentage);
+            hours = (24.0 * percentage) / 100.0;
+            calories = hours * 285;
+            percentageEntity = new PercentageEntity(day, month, year, UserActivities.WALKING, percentage, calories);
             dataBaseManager.addPercentage(percentageEntity);
 
             percentage = (int) (((double) stairs / total) * 100);
-            percentageEntity = new PercentageEntity(day, month, year, UserActivities.STAIRS, percentage);
+            hours = (24.0 * percentage) / 100.0;
+            calories = hours * 1000;
+            percentageEntity = new PercentageEntity(day, month, year, UserActivities.STAIRS, percentage, calories);
             dataBaseManager.addPercentage(percentageEntity);
 
             percentage = (int) (((double) jogging / total) * 100);
-            percentageEntity = new PercentageEntity(day, month, year, UserActivities.JOGGING, percentage);
+            hours = (24.0 * percentage) / 100.0;
+            calories = hours * 500;
+            percentageEntity = new PercentageEntity(day, month, year, UserActivities.JOGGING, percentage, calories);
             dataBaseManager.addPercentage(percentageEntity);
 
             if (unknown > 0) {
                 percentage = (int) (((double) unknown / total) * 100);
-                percentageEntity = new PercentageEntity(day, month, year, "unknown", percentage);
+                percentageEntity = new PercentageEntity(day, month, year, "unknown", percentage, 0);
                 dataBaseManager.addPercentage(percentageEntity);
             }
 
@@ -867,4 +889,5 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
         })).start();
     }
+
 }

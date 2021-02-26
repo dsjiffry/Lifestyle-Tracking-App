@@ -117,22 +117,6 @@ public class NavigationActivity extends AppCompatActivity implements Runnable {
             context.startService(suggestingImprovementsIntent);
         }
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-        // Getting Calories Burned Daily
-
-//        ZonedDateTime endTime = LocalDateTime.now().atZone(ZoneId.systemDefault());
-//        ZonedDateTime startTime = endTime.minusWeeks(1);
-//
-//        DataReadRequest readRequest = new DataReadRequest.Builder()
-//                .aggregate(DataType.AGGREGATE_CALORIES_EXPENDED)
-//                .bucketByActivityType(1, TimeUnit.SECONDS)
-//                .setTimeRange(startTime.toEpochSecond(), endTime.toEpochSecond(), TimeUnit.SECONDS)
-//                .build();
-
-
     }
 
 
