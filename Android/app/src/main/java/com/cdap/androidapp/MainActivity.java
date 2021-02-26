@@ -53,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
 
 
     private ImageView background;
+    private HandlerThread handlerThread;
     private Handler handler;
     private Context context;
     private final int NumberOfBackgroundImages = 5;
@@ -98,7 +99,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
         femaleButton = findViewById(R.id.femaleButton);
 
 
-        HandlerThread handlerThread = new HandlerThread("slideshowThread"); //Name the handlerThread
+        handlerThread = new HandlerThread("slideshowThread"); //Name the handlerThread
         handlerThread.start();
         handler = new Handler(handlerThread.getLooper());
         // handler started in onResume()
@@ -128,9 +129,9 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
             return;
         }
 
-        if (age < 0 || age > 99
-                && height < 0 || height > 300
-                && weight < 0 || weight > 500) {
+        if (age <= 0 || age > 99
+                || height <= 0 || height > 300
+                || weight <= 0 || weight > 500) {
             Toast.makeText(context, "Invalid Input", Toast.LENGTH_LONG).show();
             return;
         }
@@ -252,6 +253,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
         super.onPause();
         if (handler != null) {
             handler.removeCallbacks(this);
+            handlerThread.quitSafely();
         }
     }
 

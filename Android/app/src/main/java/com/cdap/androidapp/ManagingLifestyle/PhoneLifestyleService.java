@@ -87,6 +87,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     private IntentFilter intentFilter;
     private BroadcastReceiver broadcastReceiver;
     private Runnable workplaceLocationRunnable, workHourRunnable;
+    private HandlerThread workplaceLocationHT, workHoursHT;
     private Handler workplaceLocationHandler, workHoursHandler;
 
 
@@ -217,9 +218,17 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
             if (!isRunning) {
                 if (workplaceLocationHandler != null && workplaceLocationRunnable != null) {
                     workplaceLocationHandler.removeCallbacks(workplaceLocationRunnable);
+                    if(workplaceLocationHT != null)
+                    {
+                        workplaceLocationHT.quitSafely();
+                    }
                 }
                 if (workHoursHandler != null && workHourRunnable != null) {
                     workHoursHandler.removeCallbacks(workHourRunnable);
+                    if(workHoursHT != null)
+                    {
+                        workHoursHT.quitSafely();
+                    }
                 }
                 return;
             }
@@ -337,8 +346,6 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
     /**
      * Adds the readings to the database.
-     *
-     * @param lastReading
      */
     private void addToDatabase(PredictionEntity lastReading) {
 
@@ -521,15 +528,16 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
      * by checking the location after 11am and before 3pm.
      */
     private void determineWorkplaceLocation() {
-        HandlerThread handlerThread = new HandlerThread("determineWorkplaceLocationThread"); //Name the handlerThread
-        handlerThread.start();
+        workplaceLocationHT = new HandlerThread("determineWorkplaceLocationThread"); //Name the handlerThread
+        workplaceLocationHT.start();
         ArrayList<Double> workLongitude = new ArrayList<>();
         ArrayList<Double> workLatitude = new ArrayList<>();
-        workplaceLocationHandler = new Handler(handlerThread.getLooper());
+        workplaceLocationHandler = new Handler(workplaceLocationHT.getLooper());
         workplaceLocationRunnable = new Runnable() {
             public void run() {
                 if (!isAnalysisPeriod || !isRunning) {
                     workplaceLocationHandler.removeCallbacks(this);
+                    workplaceLocationHT.quitSafely();
                     return;
                 }
                 LocalDateTime rightNow = LocalDateTime.now();
@@ -599,15 +607,16 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
      * Will monitor user's location and record the time when they enter the workplace and when they leave the workplace
      */
     private void determineWorkHours() {
-        HandlerThread handlerThread = new HandlerThread("determineWorkHoursThread"); //Name the handlerThread
-        handlerThread.start();
-        workHoursHandler = new Handler(handlerThread.getLooper());
+        workHoursHT = new HandlerThread("determineWorkHoursThread"); //Name the handlerThread
+        workHoursHT.start();
+        workHoursHandler = new Handler(workHoursHT.getLooper());
 
         final AtomicBoolean isAtWork = new AtomicBoolean(false);
         workHourRunnable = new Runnable() {
             public void run() {
                 if (!isAnalysisPeriod || !isRunning) {
                     workHoursHandler.removeCallbacks(this);
+                    workHoursHT.quitSafely();
                     return;
                 }
 
