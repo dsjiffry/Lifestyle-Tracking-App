@@ -96,6 +96,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
      * and ask them to move about if they have.
      * <p>
      * https://newsnetwork.mayoclinic.org/discussion/infographic-sitting-vs-standing-2/
+     * https://www.health.harvard.edu/heart-health/why-you-should-move-even-just-a-little-throughout-the-day
      */
     public void checkTimeSeated() {
         LocalDateTime rightNow = LocalDateTime.now();
@@ -139,7 +140,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
      * The recommended amount of sleep for a healthy adult is at least seven hours
      * Suggests a good sleeping time to get these hours
      * <p>
-     * https://www.mayoclinic.org/healthy-lifestyle/adult-health/in-depth/sleep/art-20048379?mc_id=us&utm_source=newsnetwork&utm_medium=l&utm_content=content&utm_campaign=mayoclinic&geo=national&placementsite=enterprise&cauid=100721
+     * https://www.webmd.com/sleep-disorders/sleep-requirements#:~:text=Most%20adults%20need%207%20to,hours%20of%20sleep%20than%20usual.
      */
     public void checkSleepHours() {
         if (sharedPref.contains(Constants.SLEEP_TIME_HOUR) && sharedPref.contains(Constants.SLEEP_TIME_MINUTE)
@@ -254,17 +255,14 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
                 String improvements = sharedPref.getString(Constants.IMPROVEMENTS, "");
                 if (!improvements.toLowerCase().contains("good time to meditate")) {
                     String time;
-                    if(meditatingTime.getHour() > 11)
-                    {
+                    if (meditatingTime.getHour() > 11) {
                         time = meditatingTime.getHour() + "pm";
-                    }
-                    else
-                    {
+                    } else {
                         time = meditatingTime.getHour() + "am";
                     }
                     SharedPreferences.Editor editor = sharedPref.edit();
                     editor.putString(Constants.IMPROVEMENTS, improvements
-                            + ";" + meditatingSuggestion+time);
+                            + ";" + meditatingSuggestion + time);
                     editor.apply();
                 }
             }
@@ -278,16 +276,15 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
      * In order to track bmi and plot graph
      * will request the user to update their details once a week.
      */
-    private void updateUserDetails()
-    {
-        if(!sharedPref.contains(MainActivity.PREFERENCES_USERS_LAST_BMI_READING))
-        {return;}
+    private void updateUserDetails() {
+        if (!sharedPref.contains(MainActivity.PREFERENCES_USERS_LAST_BMI_READING)) {
+            return;
+        }
 
         LocalDateTime rightNow = LocalDateTime.now();
-        LocalDateTime lastBmiReading = LocalDateTime.parse(sharedPref.getString(MainActivity.PREFERENCES_USERS_LAST_BMI_READING,""));
+        LocalDateTime lastBmiReading = LocalDateTime.parse(sharedPref.getString(MainActivity.PREFERENCES_USERS_LAST_BMI_READING, ""));
 
-        if(lastBmiReading.plusWeeks(1).isBefore(rightNow))
-        {
+        if (lastBmiReading.plusWeeks(1).isBefore(rightNow)) {
             Intent notificationIntent = new Intent(context, MainActivity.class);
             notificationIntent.putExtra("IS_EDIT_MODE", true);
             PendingIntent pendingIntent = PendingIntent.getActivity(context, 0,
@@ -302,8 +299,6 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
     }
 
 
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -315,28 +310,28 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
 
     private void sendANotification(String contentTitle, String contentText, int drawableIcon, int notificationId, PendingIntent pendingIntent) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "SuggestingLifestyleImprovements")
-                    .setContentTitle(contentTitle)
-                    .setContentText(contentText)
-                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                    .setSmallIcon(drawableIcon)
-                    .setOngoing(false);
+                .setContentTitle(contentTitle)
+                .setContentText(contentText)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setSmallIcon(drawableIcon)
+                .setOngoing(false);
 
-            NotificationChannel channel = new NotificationChannel("SuggestingLifestyleImprovements", "improving Lifestyle", NotificationManager.IMPORTANCE_DEFAULT);
-            channel.setDescription("notifies the user of changes they can make to their current lifestyle");
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
+        NotificationChannel channel = new NotificationChannel("SuggestingLifestyleImprovements", "improving Lifestyle", NotificationManager.IMPORTANCE_DEFAULT);
+        channel.setDescription("notifies the user of changes they can make to their current lifestyle");
+        NotificationManager notificationManager = getSystemService(NotificationManager.class);
+        notificationManager.createNotificationChannel(channel);
 
-            if(pendingIntent != null) {
-                builder = builder.setAutoCancel(true)
-                        .setContentIntent(pendingIntent);
-            }
+        if (pendingIntent != null) {
+            builder = builder.setAutoCancel(true)
+                    .setContentIntent(pendingIntent);
+        }
 
         // notificationId is a unique int for each notification that you must define
         notificationManager.notify(notificationId, builder.build());
     }
 
     private void sendANotification(String contentTitle, String contentText, int drawableIcon, int notificationId) {
-        sendANotification(contentTitle,contentText,drawableIcon,notificationId,null);
+        sendANotification(contentTitle, contentText, drawableIcon, notificationId, null);
     }
 
     @Override
