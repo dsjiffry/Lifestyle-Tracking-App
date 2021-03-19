@@ -218,15 +218,13 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
             if (!isRunning) {
                 if (workplaceLocationHandler != null && workplaceLocationRunnable != null) {
                     workplaceLocationHandler.removeCallbacks(workplaceLocationRunnable);
-                    if(workplaceLocationHT != null)
-                    {
+                    if (workplaceLocationHT != null) {
                         workplaceLocationHT.quitSafely();
                     }
                 }
                 if (workHoursHandler != null && workHourRunnable != null) {
                     workHoursHandler.removeCallbacks(workHourRunnable);
-                    if(workHoursHT != null)
-                    {
+                    if (workHoursHT != null) {
                         workHoursHT.quitSafely();
                     }
                 }
@@ -545,11 +543,12 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
                     if (rightNow.getHour() >= 11 && rightNow.getHour() <= 15) //in between 11am and 3pm
                     {
-                        Location currentLocation = getCurrentLocation();
-                        workLongitude.add(currentLocation.getLongitude());
-                        workLatitude.add(currentLocation.getLongitude());
-
-                        //Toast.makeText(context, "ONE Hour", Toast.LENGTH_LONG).show();
+                        try {
+                            Location currentLocation = getCurrentLocation();
+                            workLongitude.add(currentLocation.getLongitude());
+                            workLatitude.add(currentLocation.getLongitude());
+                        } catch (NullPointerException ignored) {
+                        }
 
                     } else {
                         if (!workLatitude.isEmpty() && !workLongitude.isEmpty()) {
@@ -591,15 +590,18 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
         int atWorkHour = sharedPref.getInt(Constants.WORK_START_TIME_HOUR, -1);
         if (wakeHour >= 0 && atWorkHour >= 0) {
             LocalDateTime rightNow = LocalDateTime.now();
-            SharedPreferences.Editor editor = sharedPref.edit();
-            editor.putString(Constants.WORK_TRAVEL_METHOD, Constants.WALKING);
-            if (rightNow.getHour() > wakeHour && rightNow.getHour() < atWorkHour) {
-                if (getCurrentLocation().getSpeed() > 11.0f) // 11 m/s = 40 km/h
-                {
-                    editor.putString(Constants.WORK_TRAVEL_METHOD, Constants.VEHICLE);
+            try {
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putString(Constants.WORK_TRAVEL_METHOD, Constants.WALKING);
+                if (rightNow.getHour() > wakeHour && rightNow.getHour() < atWorkHour) {
+                    if (getCurrentLocation().getSpeed() > 11.0f) // 11 m/s = 40 km/h
+                    {
+                        editor.putString(Constants.WORK_TRAVEL_METHOD, Constants.VEHICLE);
+                    }
                 }
+                editor.apply();
+            } catch (NullPointerException ignored) {
             }
-            editor.apply();
         }
     }
 
@@ -629,57 +631,61 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
                 double workLongitude = Double.parseDouble(sharedPref.getString(Constants.WORK_LONGITUDE, ""));
                 Location currentLocation = getCurrentLocation();
                 LocalDateTime rightNow = LocalDateTime.now();
+                try {
+                    if (!isAtWork.get()) ///////////////////////////////////// Getting Time user arrived at Workplace ///////////////////////////
+                    {
+                        // Allowing Error margin of 0.0005
+                        if (currentLocation.getLongitude() < workLongitude + 0.0005 && currentLocation.getLongitude() > workLongitude - 0.0005 &&
+                                currentLocation.getLatitude() < workLatitude + 0.0005 && currentLocation.getLatitude() > workLatitude - 0.0005) {
+                            SharedPreferences.Editor editor = sharedPref.edit();
+                            if (sharedPref.contains(Constants.WORK_START_TIME_HOUR) && sharedPref.contains(Constants.WORK_START_TIME_MINUTE)) {
+                                if (rightNow.getHour() < sharedPref.getInt(Constants.WORK_START_TIME_HOUR, 99)) {
 
-                if (!isAtWork.get()) { ///////////////////////////////////// Getting Time user arrived at Workplace ///////////////////////////
-                    // Allowing Error margin of 0.0005
-                    if (currentLocation.getLongitude() < workLongitude + 0.0005 && currentLocation.getLongitude() > workLongitude - 0.0005 &&
-                            currentLocation.getLatitude() < workLatitude + 0.0005 && currentLocation.getLatitude() > workLatitude - 0.0005) {
-                        SharedPreferences.Editor editor = sharedPref.edit();
-                        if (sharedPref.contains(Constants.WORK_START_TIME_HOUR) && sharedPref.contains(Constants.WORK_START_TIME_MINUTE)) {
-                            if (rightNow.getHour() < sharedPref.getInt(Constants.WORK_START_TIME_HOUR, 99)) {
-
+                                    editor.putInt(Constants.WORK_START_TIME_HOUR, rightNow.getHour());
+                                    if (rightNow.getMinute() < sharedPref.getInt(Constants.WORK_START_TIME_MINUTE, 99)) {
+                                        editor.putInt(Constants.WORK_START_TIME_MINUTE, rightNow.getMinute());
+                                    }
+                                }
+                            } else {
                                 editor.putInt(Constants.WORK_START_TIME_HOUR, rightNow.getHour());
-                                if (rightNow.getMinute() < sharedPref.getInt(Constants.WORK_START_TIME_MINUTE, 99)) {
-                                    editor.putInt(Constants.WORK_START_TIME_MINUTE, rightNow.getMinute());
-                                }
+                                editor.putInt(Constants.WORK_START_TIME_MINUTE, rightNow.getMinute());
                             }
+                            editor.apply();
+                            isAtWork.set(true);
                         } else {
-                            editor.putInt(Constants.WORK_START_TIME_HOUR, rightNow.getHour());
-                            editor.putInt(Constants.WORK_START_TIME_MINUTE, rightNow.getMinute());
+                            workHoursHandler.postDelayed(this, 600000); // 10 minutes
+                            return;
+                            //To stop use: handler.removeCallbacks(runnable);
                         }
-                        editor.apply();
-                        isAtWork.set(true);
-                    } else {
-                        workHoursHandler.postDelayed(this, 600000); // 10 minutes
-                        return;
-                        //To stop use: handler.removeCallbacks(runnable);
-                    }
-                } else {///////////////////////////////////// Getting Time user leaves Workplace /////////////////////////////////////////////
-                    currentLocation = getCurrentLocation();
-                    rightNow = LocalDateTime.now();
+                    } else ///////////////////////////////////// Getting Time user leaves Workplace /////////////////////////////////////////////
+                    {
+                        currentLocation = getCurrentLocation();
+                        rightNow = LocalDateTime.now();
 
-                    // Allowing Error margin of 0.0005
-                    if (currentLocation.getLongitude() > workLongitude + 0.0005 && currentLocation.getLongitude() < workLongitude - 0.0005 &&
-                            currentLocation.getLatitude() > workLatitude + 0.0005 && currentLocation.getLatitude() < workLatitude - 0.0005) {
-                        SharedPreferences.Editor editor = sharedPref.edit();
-                        if (sharedPref.contains(Constants.WORK_END_TIME_HOUR) && sharedPref.contains(Constants.WORK_END_TIME_MINUTE)) {
-                            if (rightNow.getHour() > sharedPref.getInt(Constants.WORK_END_TIME_HOUR, 99)) {
-                                editor.putInt(Constants.WORK_END_TIME_HOUR, rightNow.getHour());
-                                if (rightNow.getMinute() > sharedPref.getInt(Constants.WORK_END_TIME_MINUTE, 99)) {
-                                    editor.putInt(Constants.WORK_END_TIME_MINUTE, rightNow.getMinute());
+                        // Allowing Error margin of 0.0005
+                        if (currentLocation.getLongitude() > workLongitude + 0.0005 && currentLocation.getLongitude() < workLongitude - 0.0005 &&
+                                currentLocation.getLatitude() > workLatitude + 0.0005 && currentLocation.getLatitude() < workLatitude - 0.0005) {
+                            SharedPreferences.Editor editor = sharedPref.edit();
+                            if (sharedPref.contains(Constants.WORK_END_TIME_HOUR) && sharedPref.contains(Constants.WORK_END_TIME_MINUTE)) {
+                                if (rightNow.getHour() > sharedPref.getInt(Constants.WORK_END_TIME_HOUR, 99)) {
+                                    editor.putInt(Constants.WORK_END_TIME_HOUR, rightNow.getHour());
+                                    if (rightNow.getMinute() > sharedPref.getInt(Constants.WORK_END_TIME_MINUTE, 99)) {
+                                        editor.putInt(Constants.WORK_END_TIME_MINUTE, rightNow.getMinute());
+                                    }
                                 }
+                            } else {
+                                editor.putInt(Constants.WORK_END_TIME_HOUR, rightNow.getHour());
+                                editor.putInt(Constants.WORK_END_TIME_MINUTE, rightNow.getMinute());
                             }
+                            editor.apply();
+                            isAtWork.set(false);
                         } else {
-                            editor.putInt(Constants.WORK_END_TIME_HOUR, rightNow.getHour());
-                            editor.putInt(Constants.WORK_END_TIME_MINUTE, rightNow.getMinute());
+                            workHoursHandler.postDelayed(this, 600000); // 10 minutes
+                            return;
+                            //To stop use: handler.removeCallbacks(runnable);
                         }
-                        editor.apply();
-                        isAtWork.set(false);
-                    } else {
-                        workHoursHandler.postDelayed(this, 600000); // 10 minutes
-                        return;
-                        //To stop use: handler.removeCallbacks(runnable);
                     }
+                } catch (NullPointerException ignored) {
                 }
                 if (isAnalysisPeriod) {
                     workHoursHandler.postDelayed(this, 18000000); // 5 hours
@@ -807,7 +813,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
      * Taking the per-minute readings accumulated throughout the day and converting them to per-day readings.
      * Once converted the per-minute readings will be deleted to save space.
      * Executed once per day.
-     *
+     * <p>
      * Calculating the daily calorie burn due to the activities tracked:
      * https://www.healthline.com/health/fitness-exercise/calories-burned-standing#comparison-chart
      * https://www.howmany.wiki/calories-burned/Calories-burned_standing_an_hour
@@ -851,7 +857,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
             }
 
             String gender = sharedPref.getString(MainActivity.PREFERENCES_USERS_GENDER, "").toLowerCase();
-            double calories = 0;
+            double calories;
 
 
             int percentage = (int) (((double) standing / total) * 100);

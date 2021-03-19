@@ -226,48 +226,51 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
             return;
         }
 
-        double currentLatitude = getCurrentLocation().getLatitude();
-        double currentLongitude = getCurrentLocation().getLongitude();
-        double homeLatitude = Double.parseDouble(sharedPref.getString(Constants.HOME_LATITUDE, ""));
-        double homeLongitude = Double.parseDouble(sharedPref.getString(Constants.HOME_LONGITUDE, ""));
+        try {
+            double currentLatitude = getCurrentLocation().getLatitude();
+            double currentLongitude = getCurrentLocation().getLongitude();
+            double homeLatitude = Double.parseDouble(sharedPref.getString(Constants.HOME_LATITUDE, ""));
+            double homeLongitude = Double.parseDouble(sharedPref.getString(Constants.HOME_LONGITUDE, ""));
 
-        // Allowing Error margin of 0.0005
-        if (currentLatitude >= homeLatitude - 0.0005 && currentLatitude <= homeLatitude + 0.0005 &&
-                currentLongitude >= homeLongitude - 0.0005 && currentLongitude <= homeLongitude + 0.0005) {
-            //Getting predictions of the last hour
-            List<PredictionEntity> predictions = dataBaseManager.getAllPredictions(rightNow.getHour() - 1, rightNow.getDayOfMonth(), rightNow.getMonthValue(), rightNow.getYear());
+            // Allowing Error margin of 0.0005
+            if (currentLatitude >= homeLatitude - 0.0005 && currentLatitude <= homeLatitude + 0.0005 &&
+                    currentLongitude >= homeLongitude - 0.0005 && currentLongitude <= homeLongitude + 0.0005) {
+                //Getting predictions of the last hour
+                List<PredictionEntity> predictions = dataBaseManager.getAllPredictions(rightNow.getHour() - 1, rightNow.getDayOfMonth(), rightNow.getMonthValue(), rightNow.getYear());
 
-            int sitting = 0;
-            for (PredictionEntity prediction : predictions) {
-                if (prediction.activity.equalsIgnoreCase(UserActivities.SITTING)) {
-                    sitting++;
-                }
-            }
-
-            double percentage = ((double) sitting / predictions.size());
-            if (percentage > 0.85) {
-                sendANotification("Try Meditating",
-                        "Meditating can help reduce stress.",
-                        R.drawable.ic_meditating,
-                        Constants.MEDITATING);
-                meditatingTime = LocalDateTime.now();
-
-                String improvements = sharedPref.getString(Constants.IMPROVEMENTS, "");
-                if (!improvements.toLowerCase().contains("good time to meditate")) {
-                    String time;
-                    if (meditatingTime.getHour() > 11) {
-                        time = meditatingTime.getHour() + "pm";
-                    } else {
-                        time = meditatingTime.getHour() + "am";
+                int sitting = 0;
+                for (PredictionEntity prediction : predictions) {
+                    if (prediction.activity.equalsIgnoreCase(UserActivities.SITTING)) {
+                        sitting++;
                     }
-                    SharedPreferences.Editor editor = sharedPref.edit();
-                    editor.putString(Constants.IMPROVEMENTS, improvements
-                            + ";" + meditatingSuggestion + time);
-                    editor.apply();
                 }
-            }
 
-        }
+                double percentage = ((double) sitting / predictions.size());
+                if (percentage > 0.85) {
+                    sendANotification("Try Meditating",
+                            "Meditating can help reduce stress.",
+                            R.drawable.ic_meditating,
+                            Constants.MEDITATING);
+                    meditatingTime = LocalDateTime.now();
+
+                    String improvements = sharedPref.getString(Constants.IMPROVEMENTS, "");
+                    if (!improvements.toLowerCase().contains("good time to meditate")) {
+                        String time;
+                        if (meditatingTime.getHour() > 11) {
+                            time = meditatingTime.getHour() + "pm";
+                        } else {
+                            time = meditatingTime.getHour() + "am";
+                        }
+                        SharedPreferences.Editor editor = sharedPref.edit();
+                        editor.putString(Constants.IMPROVEMENTS, improvements
+                                + ";" + meditatingSuggestion + time);
+                        editor.apply();
+                    }
+                }
+
+            }
+        }catch(NullPointerException ignored) //can happen right after reboot.
+        {}
 
 
     }
