@@ -280,12 +280,12 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
      * will request the user to update their details once a week.
      */
     private void updateUserDetails() {
-        if (!sharedPref.contains(MainActivity.PREFERENCES_USERS_LAST_BMI_READING)) {
+        if (!sharedPref.contains(MainActivity.PREFERENCES_USERS_LAST_BMI_READING_DATE)) {
             return;
         }
 
         LocalDateTime rightNow = LocalDateTime.now();
-        LocalDateTime lastBmiReading = LocalDateTime.parse(sharedPref.getString(MainActivity.PREFERENCES_USERS_LAST_BMI_READING, ""));
+        LocalDateTime lastBmiReading = LocalDateTime.parse(sharedPref.getString(MainActivity.PREFERENCES_USERS_LAST_BMI_READING_DATE, ""));
 
         if (lastBmiReading.plusWeeks(1).isBefore(rightNow)) {
             Intent notificationIntent = new Intent(context, MainActivity.class);

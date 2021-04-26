@@ -13,6 +13,7 @@ import android.view.WindowManager;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
+import com.cdap.androidapp.DailyRoutine.RoutineMainActivity;
 import com.cdap.androidapp.ManagingLifestyle.ActivityLifestyleNavigation;
 import com.cdap.androidapp.ManagingLifestyle.Models.Constants;
 import com.cdap.androidapp.ManagingLifestyle.PhoneLifestyleService;
@@ -65,9 +66,9 @@ public class NavigationActivity extends AppCompatActivity implements Runnable {
     }
 
     public void toDailyTaskSection(View view) {
-//        Intent intent = new Intent(NavigationActivity.this, .class);
+        Intent intent = new Intent(NavigationActivity.this, RoutineMainActivity.class);
 ////        intent.putExtra("key", value);
-//        this.startActivity(intent);
+        this.startActivity(intent);
     }
 
 

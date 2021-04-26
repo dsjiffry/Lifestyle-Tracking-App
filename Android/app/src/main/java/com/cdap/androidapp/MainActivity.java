@@ -47,7 +47,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
     public static final String PREFERENCES_USERS_HEIGHT = "user_height";
     public static final String PREFERENCES_USERS_WEIGHT = "user_weight";
     public static final String PREFERENCES_USERS_CURRENT_BMI = "user_bmi";
-    public static final String PREFERENCES_USERS_LAST_BMI_READING = "user_last_bmi_reading";
+    public static final String PREFERENCES_USERS_LAST_BMI_READING_DATE = "user_last_bmi_reading";
     public static final String PREFERENCES_USERS_GENDER = "user_gender";
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -143,7 +143,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
         editor.putInt(MainActivity.PREFERENCES_USERS_WEIGHT, weight);
         editor.putInt(MainActivity.PREFERENCES_USERS_HEIGHT, height);
         editor.putFloat(MainActivity.PREFERENCES_USERS_CURRENT_BMI, (float) bmi);
-        editor.putString(MainActivity.PREFERENCES_USERS_LAST_BMI_READING, LocalDateTime.now().toString());
+        editor.putString(MainActivity.PREFERENCES_USERS_LAST_BMI_READING_DATE, LocalDateTime.now().toString());
         if(maleButton.isChecked())
         {
             editor.putString(MainActivity.PREFERENCES_USERS_GENDER, Constants.MALE);
