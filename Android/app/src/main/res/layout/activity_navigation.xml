@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".NavigationActivity">
+
+    <ImageView
+        android:id="@+id/emotionImage"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:onClick="toEmotionSection"
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toTopOf="@+id/FoodImage"
+        app:layout_constraintEnd_toStartOf="@+id/LifestyleImage"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/emotion_navigation_background" />
+
+    <ImageView
+        android:id="@+id/LifestyleImage"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:onClick="toLifestyleSection"
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toTopOf="@+id/DailyImage"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/emotionImage"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/lifestyle_navigation_background" />
+
+    <ImageView
+        android:id="@+id/FoodImage"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:onClick="toFoodSection"
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/DailyImage"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/emotionImage"
+        app:srcCompat="@drawable/food_navigation_background" />
+
+    <ImageView
+        android:id="@+id/DailyImage"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:onClick="toDailyTaskSection"
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/FoodImage"
+        app:layout_constraintTop_toBottomOf="@+id/LifestyleImage"
+        app:srcCompat="@drawable/daily_task_navigation_background" />
+
+    <TextView
+        android:id="@+id/emotionText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="171dp"
+        android:layout_marginBottom="170dp"
+        android:background="#C6FFFFFF"
+        android:gravity="center_horizontal|center_vertical"
+        android:onClick="toEmotionSection"
+        android:paddingHorizontal="10dp"
+        android:text="Emotion Game"
+        android:textAlignment="gravity"
+        android:textColor="#000000"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toBottomOf="@+id/emotionImage"
+        app:layout_constraintEnd_toEndOf="@+id/emotionImage"
+        app:layout_constraintStart_toStartOf="@+id/emotionImage"
+        app:layout_constraintTop_toTopOf="@+id/emotionImage" />
+
+    <TextView
+        android:id="@+id/lifestyleText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="#C6FFFFFF"
+        android:gravity="center_horizontal|center_vertical"
+        android:onClick="toLifestyleSection"
+        android:paddingHorizontal="10dp"
+        android:text="Lifestyle Tracking"
+        android:textAlignment="gravity"
+        android:textColor="#000000"
+        android:textSize="18sp"
+        app:layout_constraintBaseline_toBaselineOf="@+id/emotionText"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/emotionImage" />
+
+    <TextView
+        android:id="@+id/foodText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="35dp"
+        android:layout_marginTop="172dp"
+        android:layout_marginEnd="36dp"
+        android:layout_marginBottom="169dp"
+        android:background="#C6FFFFFF"
+        android:gravity="center_horizontal|center_vertical"
+        android:onClick="toFoodSection"
+        android:paddingHorizontal="10dp"
+        android:text="Food Tracking"
+        android:textAlignment="gravity"
+        android:textColor="#000000"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toBottomOf="@+id/FoodImage"
+        app:layout_constraintEnd_toEndOf="@+id/FoodImage"
+        app:layout_constraintStart_toStartOf="@+id/FoodImage"
+        app:layout_constraintTop_toTopOf="@+id/FoodImage" />
+
+    <TextView
+        android:id="@+id/dailyText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="#C6FFFFFF"
+        android:gravity="center_horizontal|center_vertical"
+        android:onClick="toDailyTaskSection"
+        android:paddingHorizontal="10dp"
+        android:text="Daily Workout"
+        android:textAlignment="gravity"
+        android:textColor="#000000"
+        android:textSize="18sp"
+        app:layout_constraintBaseline_toBaselineOf="@+id/foodText"
+        app:layout_constraintEnd_toEndOf="@+id/DailyImage"
+        app:layout_constraintStart_toEndOf="@+id/FoodImage" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

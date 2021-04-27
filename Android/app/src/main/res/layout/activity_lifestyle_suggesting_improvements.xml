@@ -2,10 +2,11 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
+    android:layout_width="wrap_content"
     android:layout_height="match_parent"
     android:background="@drawable/lifestyle_background"
-    tools:context="com.cdap.androidapp.ManagingLifestyle.LifestyleMainActivity">
+    android:orientation="vertical"
+    tools:context="com.cdap.androidapp.ManagingLifestyle.ActivityLifestyleMain">
 
     <ScrollView
         android:id="@+id/scrollView"
@@ -47,7 +48,7 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/current_activity_card"
+                android:id="@+id/pie_chart_card"
                 android:layout_width="match_parent"
                 android:layout_height="159dp"
                 android:layout_marginTop="8dp"
@@ -104,7 +105,8 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 android:paddingLeft="10dp"
-                                android:text="Standing" />
+                                android:text="Standing"
+                                android:textColor="#FFFFFF" />
 
                         </LinearLayout>
 
@@ -124,7 +126,8 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 android:paddingLeft="10dp"
-                                android:text="Sitting" />
+                                android:text="Sitting"
+                                android:textColor="#FFFFFF" />
 
                         </LinearLayout>
 
@@ -144,7 +147,8 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 android:paddingLeft="10dp"
-                                android:text="Walking" />
+                                android:text="Walking"
+                                android:textColor="#FFFFFF" />
 
                         </LinearLayout>
 
@@ -164,7 +168,8 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 android:paddingLeft="10dp"
-                                android:text="Stairs" />
+                                android:text="Stairs"
+                                android:textColor="#FFFFFF" />
 
                         </LinearLayout>
 
@@ -184,7 +189,8 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 android:paddingLeft="10dp"
-                                android:text="Jogging" />
+                                android:text="Jogging"
+                                android:textColor="#FFFFFF" />
 
                         </LinearLayout>
 
@@ -202,6 +208,7 @@
                                 android:paddingLeft="10dp"
                                 android:text="Number of days"
                                 android:textAlignment="gravity"
+                                android:textColor="#FFFFFF"
                                 android:textSize="12sp" />
 
                         </LinearLayout>
@@ -209,6 +216,91 @@
                     </LinearLayout>
 
                 </LinearLayout>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/line_chart_card"
+                android:layout_width="match_parent"
+                android:layout_height="176dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:background="@drawable/rounded_corner">
+
+                <TextView
+                    android:id="@+id/textView11"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:background="#FFFFFF"
+                    android:gravity="center_horizontal|center_vertical"
+                    android:text="The blue lines show the ideal BMI range"
+                    android:textColor="#000000"
+                    android:textSize="10dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent" />
+
+                <org.eazegraph.lib.charts.ValueLineChart
+                    android:id="@+id/cubiclinechart"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="0"
+                    android:background="#FFFFFF"
+                    app:egAxisTextColor="#000000"
+                    app:egAxisTextSize="10dp"
+                    app:egLegendColor="#000000"
+                    app:egLegendHeight="20dp"
+                    app:egLegendTextSize="10dp"
+                    app:egUseDynamicScaling="true"
+                    app:egUseOverlapFill="true"
+                    app:layout_constraintBottom_toTopOf="@+id/textView11"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0.0"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="0.0">
+
+                </org.eazegraph.lib.charts.ValueLineChart>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/suggestions_card"
+                android:layout_width="match_parent"
+                android:layout_height="214dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:background="@drawable/rounded_corner">
+
+
+                <TextView
+                    android:id="@+id/suggestion_topic"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="#0D47A1"
+                    android:gravity="center"
+                    android:text="Suggestions"
+                    android:textAlignment="gravity"
+                    android:textColor="#FFFFFF"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <ListView
+                    android:id="@+id/suggestionsList"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="16dp"
+                    app:flow_verticalAlign="top"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/suggestion_topic" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 

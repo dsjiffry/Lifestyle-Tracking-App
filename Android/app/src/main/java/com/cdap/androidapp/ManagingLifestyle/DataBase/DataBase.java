@@ -12,7 +12,7 @@ import androidx.sqlite.db.SupportSQLiteOpenHelper;
 
 import com.cdap.androidapp.MainActivity;
 
-@Database(entities = {PredictionEntity.class, PercentageEntity.class}, exportSchema = false, version = 1)
+@Database(entities = {PredictionEntity.class, PercentageEntity.class, BmiEntity.class}, exportSchema = false, version = 1)
 public abstract class DataBase extends RoomDatabase {
     private static DataBase instance;
 
@@ -29,6 +29,7 @@ public abstract class DataBase extends RoomDatabase {
 
     public abstract PredictionDao predictionDao();
     public abstract PercentageDao percentageDao();
+    public abstract BmiDao bmiDao();
 
 
 

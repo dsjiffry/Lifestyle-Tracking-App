@@ -40,10 +40,7 @@ dependencies {
     implementation 'com.google.android.gms:play-services-wearable:17.0.0'
     implementation 'com.google.android.gms:play-services-location:17.1.0' //SHOULD MATCH ABOVE VERSION
     implementation 'com.google.android.gms:play-services-maps:17.0.0'
-    implementation 'org.tensorflow:tensorflow-android:1.13.1'
-    implementation('org.tensorflow:tensorflow-lite:0.0.0-nightly') { changing = true }
-    implementation('org.tensorflow:tensorflow-lite-gpu:0.0.0-nightly') { changing = true }
-    implementation('org.tensorflow:tensorflow-lite-support:0.0.0-nightly') { changing = true }
+    implementation 'com.google.android.gms:play-services-fitness:20.0.0'
     implementation 'pub.devrel:easypermissions:3.0.0'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.1.0'

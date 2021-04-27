@@ -30,6 +30,9 @@ public class Constants {
 
     public static final String HOME_LATITUDE = "lifestyle_" + "HomeLatitude";
     public static final String HOME_LONGITUDE = "lifestyle_" + "HomeLongitude";
+
+    public static final String IMPROVEMENTS = "lifestyle_" + "improvements";
+    public static final String WATCH_CHARGING = "lifestyle_" + "watch_charging";
     //////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -38,6 +41,8 @@ public class Constants {
     public static final int SITTING_TOO_LONG = 1;
     public static final int PHONE_SERVICE = 2;
     public static final int NOT_ENOUGH_SLEEP = 3;
+    public static final int MEDITATING = 4;
+    public static final int UPDATE_DETAILS = 5;
 
 
     /////////////////////////////////// Predictions ///////////////////////////////////
@@ -57,5 +62,10 @@ public class Constants {
 
 //    public static final String WALKING = "walking";
     public static final String VEHICLE = "vehicle";
+
+    ////////////////////////////////////////// Genders /////////////////////////////////////////
+
+    public static final String MALE = "male";
+    public static final String FEMALE = "female";
 
 }

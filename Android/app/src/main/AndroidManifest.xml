@@ -10,6 +10,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
 
     <application
         android:allowBackup="true"
@@ -19,13 +20,16 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.NoActionBar"
         android:usesCleartextTraffic="true">
-        <activity android:name=".ManagingLifestyle.LifestyleSuggestingImprovementsActivity"></activity>
-        <activity android:name=".ManagingLifestyle.LifestyleNavigationActivity" />
+        <activity android:name=".NavigationActivity"></activity>
+        <activity android:name=".ManagingLifestyle.ActivityLifestyleSuggestingImprovements"
+            android:screenOrientation="portrait"/>
+        <activity android:name=".ManagingLifestyle.ActivityLifestyleNavigation"
+            android:screenOrientation="portrait"/>
         <activity android:name=".DailyRoutine.RoutineMainActivity" />
         <activity android:name=".FoodReccomendation.FoodMainActivity" />
         <activity android:name=".GameDifficulty.GameMainActivity" />
         <activity
-            android:name=".ManagingLifestyle.LifestyleMainActivity"
+            android:name=".ManagingLifestyle.ActivityLifestyleMain"
             android:screenOrientation="portrait" />
         <activity android:name=".MainActivity">
             <intent-filter>
