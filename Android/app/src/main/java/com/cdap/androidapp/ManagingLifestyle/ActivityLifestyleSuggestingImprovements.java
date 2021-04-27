@@ -4,14 +4,12 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.util.TypedValue;
-import android.view.Gravity;
-import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.constraintlayout.widget.ConstraintSet;
 
 import com.cdap.androidapp.MainActivity;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.BmiEntity;
@@ -27,6 +25,7 @@ import org.eazegraph.lib.models.ValueLinePoint;
 import org.eazegraph.lib.models.ValueLineSeries;
 
 import java.text.DateFormatSymbols;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity implements Runnable {
@@ -40,7 +39,9 @@ public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity i
     private DataBaseManager dataBaseManager;
     private SharedPreferences sharedPref;
     private ConstraintLayout suggestionsCard;
+    private ListView suggestionsList;
     private int previousTextViewID;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +59,7 @@ public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity i
         dataBaseManager = new DataBaseManager(context);
         suggestionsCard = findViewById(R.id.suggestions_card);
         suggestionsTopic = findViewById(R.id.suggestion_topic);
+        suggestionsList = findViewById(R.id.suggestionsList);
         previousTextViewID = suggestionsTopic.getId();
         sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
 
@@ -110,10 +112,17 @@ public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity i
         }
 
         String[] suggestions = sharedPref.getString(Constants.IMPROVEMENTS, "").split(";");
+        ArrayList<String> listItems = new ArrayList<>();
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_list_item_1,
+                listItems);
+        suggestionsList.setAdapter(adapter);
         for (String suggestion : suggestions) {
-            addSuggestion(suggestion);
+            if (!suggestion.isEmpty()) {
+                listItems.add(suggestion);
+            }
         }
-        addSuggestion(""); //empty line at end
+        adapter.notifyDataSetChanged();
 
     }
 
@@ -188,10 +197,10 @@ public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity i
                 }
             }
 
-            String monthString = new DateFormatSymbols().getMonths()[bmiEntity.month-1];
-            monthString = monthString.substring(0,3);
+            String monthString = new DateFormatSymbols().getMonths()[bmiEntity.month - 1];
+            monthString = monthString.substring(0, 3);
 
-            series.addPoint(new ValueLinePoint(day+" "+monthString, bmiEntity.bmi));
+            series.addPoint(new ValueLinePoint(day + " " + monthString, bmiEntity.bmi));
             endingValue = bmiEntity.bmi;
 
 
@@ -201,8 +210,6 @@ public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity i
         }
         series.addPoint(new ValueLinePoint("ending point", endingValue));
         lineChart.addSeries(series);
-
-
 
 
         //ideal BMI is in the 18.5 to 24.9 range
@@ -226,29 +233,6 @@ public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity i
         updatePieChart(0, 0, 0, 0, 0, 0);
     }
 
-    public void addSuggestion(String message) {
-        TextView textView = new TextView(context);
-        textView.setId(View.generateViewId());
-        textView.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
-        textView.setGravity(Gravity.CENTER);
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        textView.setTextColor(Color.WHITE);
-        textView.setText(message);
-
-        suggestionsCard.addView(textView);
-
-        ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(ConstraintLayout.LayoutParams.MATCH_PARENT, 150);
-        params.setMargins(8, 8, 8, 8);
-        textView.setLayoutParams(params);
-
-
-        ConstraintSet constraintSet = new ConstraintSet();
-        constraintSet.clone(suggestionsCard);
-        constraintSet.connect(textView.getId(), ConstraintSet.TOP, previousTextViewID, ConstraintSet.BOTTOM);
-        constraintSet.applyTo(suggestionsCard);
-
-        previousTextViewID = textView.getId();
-    }
 }
 
 

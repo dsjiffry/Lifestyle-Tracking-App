@@ -267,7 +267,7 @@
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/suggestions_card"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="214dp"
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="8dp"
                 android:background="@drawable/rounded_corner">
@@ -290,6 +290,17 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
+
+                <ListView
+                    android:id="@+id/suggestionsList"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="16dp"
+                    app:flow_verticalAlign="top"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/suggestion_topic" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 

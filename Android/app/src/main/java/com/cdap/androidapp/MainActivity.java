@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, GoogleA
     ////////////////////////////////////// DO NOT MODIFY THESE /////////////////////////////////////////////////
     public static final String PREFERENCES_NAME = "fitness_mobile_game_preferences";
     public static final String DB_NAME = "fitness_mobile_game_DB";
-    public static final String SERVER_BASE_URL = "http://192.168.9.180" +
+    public static final String SERVER_BASE_URL = "http://192.168.9.181" +
             ":8000";
 
     //Shared Preference Keys
