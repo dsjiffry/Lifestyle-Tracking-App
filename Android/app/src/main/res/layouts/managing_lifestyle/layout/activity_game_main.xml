@@ -4,6 +4,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.cdap.androidapp.GameDifficulty.GameMainActivity">
+    tools:context="com.cdap.androidapp.EmotionDetection.GameMainActivity">
 
 </androidx.constraintlayout.widget.ConstraintLayout>

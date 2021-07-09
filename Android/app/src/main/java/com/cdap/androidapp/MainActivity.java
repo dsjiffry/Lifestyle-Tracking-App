@@ -36,12 +36,12 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class MainActivity extends AppCompatActivity implements Runnable, GoogleApiClient.ConnectionCallbacks {
 
+    public static final String SERVER_BASE_URL = "http://192.168.1.38" +
+            ":8000";
+
     ////////////////////////////////////// DO NOT MODIFY THESE /////////////////////////////////////////////////
     public static final String PREFERENCES_NAME = "fitness_mobile_game_preferences";
     public static final String DB_NAME = "fitness_mobile_game_DB";
-    public static final String SERVER_BASE_URL = "http://192.168.9.181" +
-            ":8000";
-
     //Shared Preference Keys
     public static final String PREFERENCES_USERS_AGE = "user_age";
     public static final String PREFERENCES_USERS_HEIGHT = "user_height";

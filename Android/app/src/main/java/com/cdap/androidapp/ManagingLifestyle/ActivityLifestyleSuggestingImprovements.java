@@ -1,15 +1,17 @@
 package com.cdap.androidapp.ManagingLifestyle;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.view.View;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
 
 import com.cdap.androidapp.MainActivity;
 import com.cdap.androidapp.ManagingLifestyle.DataBase.BmiEntity;
@@ -26,6 +28,7 @@ import org.eazegraph.lib.models.ValueLineSeries;
 
 import java.text.DateFormatSymbols;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity implements Runnable {
@@ -38,14 +41,26 @@ public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity i
     Context context;
     private DataBaseManager dataBaseManager;
     private SharedPreferences sharedPref;
-    private ConstraintLayout suggestionsCard;
     private ListView suggestionsList;
-    private int previousTextViewID;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        //Making status bar and navigation bar transparent
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                        View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+        getWindow().setStatusBarColor(Color.parseColor("#42000000"));
+        getWindow().setNavigationBarColor(Color.parseColor("#42000000"));
+        setContentView(R.layout.activity_lifestyle_navigation);
+        setContentView(R.layout.activity_lifestyle_navigation);
+
         setContentView(R.layout.activity_lifestyle_suggesting_improvements);
         context = getApplicationContext();
         pieChart = findViewById(R.id.piechart);
@@ -57,10 +72,8 @@ public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity i
         chartJogging = findViewById(R.id.pieChart_jogging_textView);
         chartNoOfDays = findViewById(R.id.pieChart_noOfDays_textView);
         dataBaseManager = new DataBaseManager(context);
-        suggestionsCard = findViewById(R.id.suggestions_card);
         suggestionsTopic = findViewById(R.id.suggestion_topic);
         suggestionsList = findViewById(R.id.suggestionsList);
-        previousTextViewID = suggestionsTopic.getId();
         sharedPref = getSharedPreferences(MainActivity.PREFERENCES_NAME, Context.MODE_PRIVATE);
 
 
@@ -126,6 +139,7 @@ public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity i
 
     }
 
+    @SuppressLint("SetTextI18n")
     public void updatePieChart(int standingPercentage, int sittingPercentage, int walkingPercentage, int stairsPercentage, int joggingPercentage, int numberOfDays) {
         pieChart.addPieSlice(
                 new PieModel(
@@ -170,6 +184,7 @@ public class ActivityLifestyleSuggestingImprovements extends AppCompatActivity i
 
         DataBaseManager dataBaseManager = new DataBaseManager(context);
         List<BmiEntity> bmiEntities = dataBaseManager.loadBmiHistory();
+        Collections.reverse(bmiEntities);
 
         int count = 0;
         float endingValue = 0f;

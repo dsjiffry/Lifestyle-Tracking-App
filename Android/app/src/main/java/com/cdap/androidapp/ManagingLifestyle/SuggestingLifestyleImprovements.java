@@ -47,9 +47,9 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
     /**
      * The notification Messages
      */
-    private final String standingSuggestion = "You sit for a long time, try standing and moving about once per hour.";
-    private final String sleepingSuggestion = "You aren't getting enough sleep, An adult requires at least 7 hours of sleep per day.";
-    private final String meditatingSuggestion = "A good time to meditate is ";
+    private final String standingSuggestion = "You sit for a long time, I'll remind you to move about once per hour.";
+    private final String sleepingSuggestion = "You aren't getting enough sleep, Try going to sleep at about";
+    private final String meditatingSuggestion = "A good time for you to meditate is ";
 
 
     @Override
@@ -187,7 +187,14 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
                 String improvements = sharedPref.getString(Constants.IMPROVEMENTS, "");
                 if (!improvements.toLowerCase().contains("getting enough sleep")) {
                     SharedPreferences.Editor editor = sharedPref.edit();
-                    improvements = improvements.replace(";" + sleepingSuggestion, "");
+                    int idealSleepHour = (int) (wakeHour - 7);
+                    String prefix = "am";
+                    if(idealSleepHour > 12)
+                    {
+                        idealSleepHour = idealSleepHour - 12;
+                        prefix = "pm";
+                    }
+                    improvements = improvements.replace(";" + sleepingSuggestion + idealSleepHour + prefix, "");
                     editor.putString(Constants.IMPROVEMENTS, improvements);
                     editor.apply();
                 }
@@ -276,7 +283,7 @@ public class SuggestingLifestyleImprovements extends Service implements Runnable
     }
 
     /**
-     * In order to track bmi and plot graph
+     * In order to track bmi and plot graph,
      * will request the user to update their details once a week.
      */
     private void updateUserDetails() {

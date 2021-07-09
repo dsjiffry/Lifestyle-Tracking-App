@@ -13,7 +13,6 @@ import android.view.WindowManager;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
-import com.cdap.androidapp.DailyRoutine.RoutineMainActivity;
 import com.cdap.androidapp.ManagingLifestyle.ActivityLifestyleNavigation;
 import com.cdap.androidapp.ManagingLifestyle.Models.Constants;
 import com.cdap.androidapp.ManagingLifestyle.PhoneLifestyleService;
@@ -48,9 +47,6 @@ public class NavigationActivity extends AppCompatActivity implements Runnable {
     }
 
     public void toEmotionSection(View view) {
-//        Intent intent = new Intent(NavigationActivity.this, .class);
-////        intent.putExtra("key", value);
-//        this.startActivity(intent);
     }
 
     public void toLifestyleSection(View view) {
@@ -60,15 +56,9 @@ public class NavigationActivity extends AppCompatActivity implements Runnable {
     }
 
     public void toFoodSection(View view) {
-//        Intent intent = new Intent(NavigationActivity.this, .class);
-////        intent.putExtra("key", value);
-//        this.startActivity(intent);
     }
 
     public void toDailyTaskSection(View view) {
-        Intent intent = new Intent(NavigationActivity.this, RoutineMainActivity.class);
-////        intent.putExtra("key", value);
-        this.startActivity(intent);
     }
 
 
@@ -90,13 +80,15 @@ public class NavigationActivity extends AppCompatActivity implements Runnable {
             editor.apply();
         }
 
-        //Getting location Permissions
+        //Getting all Permissions
         while (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+                    Manifest.permission.CAMERA,
                     Manifest.permission.ACCESS_COARSE_LOCATION,
                     Manifest.permission.ACTIVITY_RECOGNITION,}, 1);
             try {

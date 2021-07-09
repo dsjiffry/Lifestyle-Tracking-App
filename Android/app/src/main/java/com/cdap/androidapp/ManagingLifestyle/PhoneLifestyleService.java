@@ -417,7 +417,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     }
 
     /**
-     * Assuming wears watch after waking up,
+     * Assuming user wears watch after waking up,
      * this will save waking time in preferences
      * Also gets user's location and assumes it as their home.
      */
@@ -458,7 +458,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     }
 
     /**
-     * Will record the time when the watch says the user is Exercising
+     * Will record the time when the watch says the user is Exercising (based on heart rate)
      */
     private void setExercisingTime() {
         if (!isAnalysisPeriod) {
@@ -523,7 +523,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
 
     /**
      * Will determine the workplace location
-     * by checking the location after 11am and before 3pm.
+     * by checking the location once per hour, after 11am and before 3pm.
      */
     private void determineWorkplaceLocation() {
         workplaceLocationHT = new HandlerThread("determineWorkplaceLocationThread"); //Name the handlerThread
@@ -574,7 +574,7 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
     }
 
     /**
-     * Determine how the user gets to work
+     * Determine how the user gets to work (Either Walking or by Vehicle)
      */
     private void determineWorkplaceTravelMethod() {
         if (!isAnalysisPeriod) {
@@ -584,7 +584,6 @@ public class PhoneLifestyleService extends WearableListenerService implements Ru
         if (sharedPref.getString(Constants.WORK_TRAVEL_METHOD, "").equalsIgnoreCase(Constants.VEHICLE)) {
             return;
         }
-
 
         int wakeHour = sharedPref.getInt(Constants.WAKE_TIME_HOUR, -1);
         int atWorkHour = sharedPref.getInt(Constants.WORK_START_TIME_HOUR, -1);

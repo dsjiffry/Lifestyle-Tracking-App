@@ -1,6 +1,7 @@
 package com.cdap.androidapp.ManagingLifestyle;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -56,6 +57,7 @@ public class ActivityLifestyleMain extends AppCompatActivity implements Runnable
             card_basic_detail_subtext;
 
 
+    @SuppressLint("InlinedApi")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
