@@ -19,8 +19,8 @@ Furthermore, will Detect and notify the user of:
    2. A suitable meditating time
    3. A suitable sleeping time (to get 7 hours of sleep)
 
-The original project is hosted at our Universities Gitlab server, This repo contains only my individual section.   
-The marketing website of our project is at: https://cdap-20-21-j-19.github.io/   
+The original project is hosted at our Universities Gitlab server (http://gitlab.sliit.lk/20_21-j_19/20_21-j19),
+This repo contains only my individual section. The marketing website of our project is at: https://cdap-20-21-j-19.github.io/   
 
 # Prerequisites
    1. Python 3.7.5
